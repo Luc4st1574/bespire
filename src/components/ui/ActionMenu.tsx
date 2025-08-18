@@ -46,6 +46,8 @@ const ActionMenu: React.FC<ActionMenuProps> = ({ onEdit, onDelete }) => {
       <button 
         className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
         onClick={handleToggle}
+        title="Open action menu"
+        aria-label="Open action menu"
       >
         <svg
           className="w-4 h-4 text-gray-900"

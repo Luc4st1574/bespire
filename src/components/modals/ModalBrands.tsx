@@ -114,6 +114,7 @@ export default function ModalBrands({
                 onClick={onClose}
                 className="text-gray-600 hover:text-black"
                 type="button"
+                title="Close"
               >
                 <X className="w-6 h-6" />
               </button>

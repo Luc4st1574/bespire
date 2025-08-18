@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import EventActions, { EventActionItem } from '../ui/EventActions';
 import EventArchiveModal from './EventArchiveModal';
+import ShareEventModal from './ShareEventModal';
 import EventDeleteModal from './EventDeleteModal';
 import { getFileIcon } from '@/utils/getFileIcon';
 import Calendar from '@/assets/icons/event_type.svg';
@@ -59,6 +60,7 @@ const files: FileItemData[] = [
 
 export default function EventDetailModal({ isOpen, onClose, event, onDeleteEvent, onArchiveEvent}: EventDetailModalProps) {
     const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     if (!event) return null;
@@ -86,10 +88,14 @@ export default function EventDetailModal({ isOpen, onClose, event, onDeleteEvent
         onClose();
     };
     
+    // --- Handlers for Share Modal ---
+    const handleOpenShareModal = () => setIsShareModalOpen(true);
+    const handleCloseShareModal = () => setIsShareModalOpen(false);
+
     // --- CHANGE: Added onClick to the 'Delete' action item ---
     const eventActionItems: EventActionItem[] = [
       { label: 'Archive', onClick: handleOpenArchiveModal },
-      { label: 'Share to Chat' },
+      { label: 'Share to Chat', onClick: handleOpenShareModal },
       { 
         label: 'Notify me', 
         subMenu: ['5 mins before', '15 mins before', '30 mins before', '1 hour before', '1 day before'] 
@@ -264,6 +270,12 @@ export default function EventDetailModal({ isOpen, onClose, event, onDeleteEvent
                 isOpen={isDeleteModalOpen}
                 onClose={handleCloseDeleteModal}
                 onConfirm={handleConfirmDelete}
+            />
+
+            <ShareEventModal 
+                isOpen={isShareModalOpen}
+                onClose={handleCloseShareModal}
+                event={event} 
             />
         </>
     );

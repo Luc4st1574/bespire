@@ -29,7 +29,7 @@ export default function EventCreatedToast({ toastId, onReview }: EventCreatedToa
                 </button>
                 <div className="h-4 w-px bg-gray-300" />
                 <button onClick={() => toast.dismiss(toastId)} className="transform rounded-full p-1 text-gray-500 transition-colors hover:bg-gray-200 hover:text-black" title="Close notification">
-                    <X className="h-4 w-4" />
+                    <X className="h-10 w-10" />
                 </button>
             </div>
         </div>
