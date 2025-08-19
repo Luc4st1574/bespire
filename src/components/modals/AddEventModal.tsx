@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition, Listbox } from '@headlessui/react';
-import { X, Calendar, CalendarClock, CheckIcon, ChevronDown } from 'lucide-react';
+import { X, Calendar, CalendarClock, CheckIcon, ChevronDown, Plus } from 'lucide-react';
+import Image from 'next/image';
 import { EventCategory } from '@/app/calendar/page';
 import { Event } from '@/components/calendar/CalendarMain';
 import { toISODateString } from '@/utils/getDates';
 import CheckSquare from '@/assets/icons/add_task.svg';
 import Users from '@/assets/icons/meeting_add.svg';
+import InvitePeoplePopover, { Person } from '@/components/ui/InvitePeoplePopover';
 
 interface AddEventModalProps {
     isOpen: boolean;
@@ -29,6 +31,7 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
     const [isRecurring, setIsRecurring] = useState(false);
     const [notifyOption, setNotifyOption] = useState('1 hour before');
     const [visibilityOption, setVisibilityOption] = useState('Only Invited');
+    const [invitedPeople, setInvitedPeople] = useState<Person[]>([]);
     const dateInputRef = React.useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -44,8 +47,18 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
             setError('');
             setNotifyOption('1 hour before');
             setVisibilityOption('Only Invited');
+            setInvitedPeople([]);
         }
     }, [isOpen, initialDate]);
+
+    const handleDoneInviting = (people: Person[]) => {
+        setInvitedPeople(people);
+    };
+
+    // 1. Added function to handle removing an invited person
+    const handleRemovePerson = (personToRemove: Person) => {
+        setInvitedPeople(prev => prev.filter(p => p.id !== personToRemove.id));
+    };
 
     useEffect(() => {
         if (isAllDay) {
@@ -64,8 +77,10 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
     }));
 
     const notifyOptions = [
-        { value: '1 hour before', label: '1 hour before' },
+        { value: '5 mins before', label: '5 mins before' },
+        { value: '15 mins before', label: '15 mins before' },
         { value: '30 minutes before', label: '30 minutes before' },
+        { value: '1 hour before', label: '1 hour before' },
         { value: '1 day before', label: '1 day before' },
     ];
 
@@ -74,7 +89,6 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
         { value: 'Public', label: 'Public' },
     ];
 
-    // --- MODIFIED handleSubmit WITH RECURRING LOGIC ---
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!title.trim()) {
@@ -156,7 +170,6 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
                                 
                                 <form onSubmit={handleSubmit} className="mt-4 flex-1 overflow-y-auto pr-2 space-y-9">
                                     <div>
-                                        {/* This entire section is untouched, as requested */}
                                         <label className="block text-sm font-medium text-black mb-2 mt-3">Frequently Requested</label>
                                         <div className="grid grid-cols-3 gap-2">
                                             <button type="button" onClick={() => setActiveType('Tasks')} className={`flex flex-col items-start justify-center gap-1 py-4 px-3 rounded-lg border text-sm font-medium transition-colors ${activeType === 'Tasks' ? 'bg-[#e9f2e7] border-[#697d67] text-[#697d67]' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}>
@@ -205,7 +218,6 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
                                     {error && <p className="text-sm text-red-600 -my-2">{error}</p>}
                                     
                                     <div className="flex flex-col sm:flex-row gap-4">
-                                        {/* Date Section */}
                                         <div className="flex-1">
                                             <div className="flex justify-between items-center mb-1">
                                                 <label htmlFor="date-button" className="block text-sm font-medium text-gray-700">Date</label>
@@ -268,7 +280,6 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
                                                 />
                                             </div>
                                         </div>
-                                        {/* Time Section */}
                                         <div className="flex-1">
                                             <div className="flex justify-between items-center mb-1">
                                                 <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">Time</label>
@@ -308,7 +319,6 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
                                     </div>
 
                                     <div className="flex gap-4">
-                                        {/* Notify Listbox */}
                                         <div className="flex-1">
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Notify</label>
                                             <Listbox value={notifyOption} onChange={setNotifyOption}>
@@ -343,7 +353,6 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
                                             </Listbox>
                                         </div>
                                         
-                                        {/* Visibility Listbox */}
                                         <div className="flex-1">
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
                                             <Listbox value={visibilityOption} onChange={setVisibilityOption}>
@@ -389,6 +398,70 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
                                             placeholder="Enter Description">
                                         </textarea>
                                     </div>
+
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-medium text-gray-700">Invite People</span>
+                                            <InvitePeoplePopover 
+                                                onDone={handleDoneInviting}
+                                                invitedPeople={invitedPeople}
+                                            >
+                                                <button type="button" className="flex items-center justify-center gap-1.5 px-3 py-1.5 border border-[#697d67] text-[#697d67] bg-transparent rounded-full text-sm font-medium hover:bg-gray-50">
+                                                    <Plus size={16} />
+                                                    <span>Add</span>
+                                                </button>
+                                            </InvitePeoplePopover>
+                                        </div>
+                                        
+                                        {/* 2. Updated the display for invited people */}
+                                        {invitedPeople.length > 0 && (
+                                            <div className="pt-2 max-h-40 overflow-y-auto">
+                                                <ul className="space-y-2">
+                                                    {invitedPeople.map(person => (
+                                                        <li key={person.id} className="flex items-center justify-between py-1 pr-1">
+                                                            <div className="flex items-center gap-3">
+                                                                <Image src={person.avatar} alt={person.name} width={32} height={32} className="h-8 w-8 rounded-full" />
+                                                                <div>
+                                                                    <span className="text-sm font-medium text-gray-900">{person.name}</span>
+                                                                    <p className="text-xs text-gray-500">{person.role}</p>
+                                                                </div>
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                title={`Remove ${person.name}`}
+                                                                onClick={() => handleRemovePerson(person)}
+                                                                className="p-1 rounded-full text-gray-400 hover:bg-gray-100 focus:outline-none focus:ring-0"
+                                                            >
+                                                                <X size={30} />
+                                                            </button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-medium text-gray-700">Links</span>
+                                            <button
+                                                type="button"
+                                                className="flex items-center justify-center gap-1.5 px-3 py-1.5 border border-[#697d67] text-[#697d67] bg-transparent rounded-full text-sm font-medium hover:bg-gray-50 transition-colors"
+                                            >
+                                                <Plus size={16} />
+                                                <span>Add</span>
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-medium text-gray-700">Files</span>
+                                            <button
+                                                type="button"
+                                                className="flex items-center justify-center gap-1.5 px-3 py-1.5 border border-[#697d67] text-[#697d67] bg-transparent rounded-full text-sm font-medium hover:bg-gray-50 transition-colors"
+                                            >
+                                                <Plus size={16} />
+                                                <span>Add</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
                                     <div className="flex w-full gap-4 flex-shrink-0 pt-4">
                                         <button 
                                             type="button" 

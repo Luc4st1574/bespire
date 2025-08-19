@@ -62,8 +62,13 @@ export default function EventDetailModal({ isOpen, onClose, event, onDeleteEvent
     const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [notificationTime, setNotificationTime] = useState('1 hour before');
 
     if (!event) return null;
+
+    const handleNotificationChange = (time: string) => {
+        setNotificationTime(time);
+    };
 
     // --- CHANGE: Handlers for opening, closing, and confirming deletion ---
     const handleOpenDeleteModal = () => setIsDeleteModalOpen(true);
@@ -94,14 +99,20 @@ export default function EventDetailModal({ isOpen, onClose, event, onDeleteEvent
 
     // --- CHANGE: Added onClick to the 'Delete' action item ---
     const eventActionItems: EventActionItem[] = [
-      { label: 'Archive', onClick: handleOpenArchiveModal },
-      { label: 'Share to Chat', onClick: handleOpenShareModal },
-      { 
-        label: 'Notify me', 
-        subMenu: ['5 mins before', '15 mins before', '30 mins before', '1 hour before', '1 day before'] 
-      },
-      { isSeparator: true },
-      { label: 'Delete', isDestructive: true, onClick: handleOpenDeleteModal },
+        { label: 'Archive', onClick: handleOpenArchiveModal },
+        { label: 'Share to Chat', onClick: handleOpenShareModal },
+        {
+        label: 'Notify me',
+        subMenu: [
+            { label: '5 mins before', onClick: () => handleNotificationChange('5 mins before') },
+            { label: '15 mins before', onClick: () => handleNotificationChange('15 mins before') },
+            { label: '30 mins before', onClick: () => handleNotificationChange('30 mins before') },
+            { label: '1 hour before', onClick: () => handleNotificationChange('1 hour before') },
+            { label: '1 day before', onClick: () => handleNotificationChange('1 day before') },
+        ]
+        },
+        { isSeparator: true },
+        { label: 'Delete', isDestructive: true, onClick: handleOpenDeleteModal },
     ];
 
     const formatDate = (isoDate: string, startTime?: string, endTime?: string) => {
@@ -169,7 +180,7 @@ export default function EventDetailModal({ isOpen, onClose, event, onDeleteEvent
 
                                                 <Bell size={18} className="text-[#5e6b66] mt-0.5" />
                                                 <span className="text-sm text-[#5e6b66]">Notify</span>
-                                                <span className="text-sm font-medium text-gray-800 ml-8">1 hour before</span>
+                                                <span className="text-sm font-medium text-gray-800 ml-8">{notificationTime}</span>
 
                                                 <Eye size={18} className="text-[#5e6b66] mt-0.5" />
                                                 <span className="text-sm text-[#5e6b66]">Visibility</span>
