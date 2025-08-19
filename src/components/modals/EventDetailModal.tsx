@@ -1,11 +1,11 @@
 "use client";
 
-import React, { Fragment, useState } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
+import React, { Fragment, useState, useEffect } from 'react';
+import { Dialog, Transition, Menu } from '@headlessui/react';
 import Image from 'next/image';
 import { Event } from '@/components/calendar/CalendarMain';
 import {
-    X, ChevronLeft, Link as LinkIcon, Edit, MoreHorizontal, Download
+    X, ChevronLeft, Link as LinkIcon, Edit, MoreHorizontal, Download, Share2, Trash2
 } from 'lucide-react';
 import EventActions, { EventActionItem } from '../ui/EventActions';
 import EventArchiveModal from './EventArchiveModal';
@@ -18,7 +18,6 @@ import Eye from '@/assets/icons/visibility_event.svg';
 import Bell from '@/assets/icons/notify_event.svg';
 import Users from '@/assets/icons/invited_event.svg';
 import Cloud from '@/assets/icons/cloud_check.svg';
-
 
 interface LinkItemData {
     name: string;
@@ -45,13 +44,14 @@ const invitedPeople = [
     { name: 'Zeus Roman', avatar: 'https://i.pravatar.cc/150?img=3', bgColor: 'bg-red-100' },
 ];
 
-const links: LinkItemData[] = [
+// Initial data for state
+const initialLinks: LinkItemData[] = [
     { name: 'Trello - Campaign Board', url: 'https://trello.com' },
     { name: 'Notion - Q2 Product Strategy', url: 'https://notion.so' },
     { name: 'Client Launch Checklist', url: 'https://docs.google.com' },
 ];
 
-const files: FileItemData[] = [
+const initialFiles: FileItemData[] = [
     { name: 'Waymax Brand Guide 2024.pdf', date: 'Aug 13, 2025 by Gerard', url: '#' },
     { name: 'Waymax Marketing Plan 2024.docx', date: 'Aug 13, 2025 by Gerard', url: '#' },
     { name: 'Waymax_2024_Strategy_Overview.pdf', date: 'Aug 13, 2025 by Gerard', url: '#' },
@@ -63,14 +63,42 @@ export default function EventDetailModal({ isOpen, onClose, event, onDeleteEvent
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [notificationTime, setNotificationTime] = useState('1 hour before');
+    
+    // --- CHANGE: Moved links and files to state to allow deletion ---
+    const [links, setLinks] = useState<LinkItemData[]>(initialLinks);
+    const [files, setFiles] = useState<FileItemData[]>(initialFiles);
+
+    // Reset state when modal is opened/event changes
+    useEffect(() => {
+        if (isOpen) {
+            setLinks(initialLinks);
+            setFiles(initialFiles);
+        }
+    }, [isOpen]);
 
     if (!event) return null;
+    
+    // --- CHANGE: Handlers for file and link actions ---
+    const handleShareFile = (file: FileItemData) => {
+        alert(`Sharing ${file.name}`);
+    };
+    
+    const handleDeleteFile = (fileToDelete: FileItemData) => {
+        setFiles(currentFiles => currentFiles.filter(file => file.name !== fileToDelete.name));
+    };
+    
+    const handleShareLink = (link: LinkItemData) => {
+        alert(`Sharing ${link.name}`);
+    };
+    
+    const handleDeleteLink = (linkToDelete: LinkItemData) => {
+        setLinks(currentLinks => currentLinks.filter(link => link.url !== linkToDelete.url));
+    };
 
     const handleNotificationChange = (time: string) => {
         setNotificationTime(time);
     };
 
-    // --- CHANGE: Handlers for opening, closing, and confirming deletion ---
     const handleOpenDeleteModal = () => setIsDeleteModalOpen(true);
     const handleCloseDeleteModal = () => setIsDeleteModalOpen(false);
 
@@ -82,7 +110,6 @@ export default function EventDetailModal({ isOpen, onClose, event, onDeleteEvent
         onClose();
     };
 
-    // --- Archive Handlers ---
     const handleOpenArchiveModal = () => setIsArchiveModalOpen(true);
     const handleCloseArchiveModal = () => setIsArchiveModalOpen(false);
     const handleConfirmArchive = () => {
@@ -93,11 +120,9 @@ export default function EventDetailModal({ isOpen, onClose, event, onDeleteEvent
         onClose();
     };
     
-    // --- Handlers for Share Modal ---
     const handleOpenShareModal = () => setIsShareModalOpen(true);
     const handleCloseShareModal = () => setIsShareModalOpen(false);
 
-    // --- CHANGE: Added onClick to the 'Delete' action item ---
     const eventActionItems: EventActionItem[] = [
         { label: 'Archive', onClick: handleOpenArchiveModal },
         { label: 'Share to Chat', onClick: handleOpenShareModal },
@@ -215,18 +240,28 @@ export default function EventDetailModal({ isOpen, onClose, event, onDeleteEvent
                                                     return (
                                                         <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                                                             <div className="flex items-center gap-3">
-                                                                <Image
-                                                                    src={faviconUrl}
-                                                                    alt={`${hostname} favicon`}
-                                                                    width={20}
-                                                                    height={20}
-                                                                    className="rounded-sm"
-                                                                />
+                                                                <Image src={faviconUrl} alt={`${hostname} favicon`} width={20} height={20} className="rounded-sm" />
                                                                 <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-blue-600 hover:underline">{item.name}</a>
                                                             </div>
                                                             <div className="flex items-center gap-3">
                                                                 <button aria-label={`Copy link for ${item.name}`} title={`Copy link for ${item.name}`} className="text-[#5e6b66] hover:text-gray-900"><LinkIcon size={18} /></button>
-                                                                <button aria-label={`More options for ${item.name}`} title={`More options for ${item.name}`} className="text-[#5e6b66] hover:text-gray-900"><MoreHorizontal size={18} /></button>
+                                                                
+                                                                {/* --- LINK ACTIONS DROPDOWN --- */}
+                                                                <Menu as="div" className="relative inline-block text-left">
+                                                                    <Menu.Button className="p-1 text-[#5e6b66] hover:text-gray-900 rounded-full">
+                                                                        <MoreHorizontal size={18} aria-hidden="true" />
+                                                                    </Menu.Button>
+                                                                    <Transition as={Fragment} enter="transition ease-out duration-100" enterFrom="transform opacity-0 scale-95" enterTo="transform opacity-100 scale-100" leave="transition ease-in duration-75" leaveFrom="transform opacity-100 scale-100" leaveTo="transform opacity-0 scale-95">
+                                                                        <Menu.Items className="absolute right-0 mt-2 w-32 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-none z-10">
+                                                                            <div className="px-1 py-1">
+                                                                                <Menu.Item>{({ active }) => (<button onClick={() => handleShareLink(item)} className={`${active ? 'bg-gray-100' : ''} group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-700`}><Share2 className="mr-2 h-4 w-4" aria-hidden="true" />Share</button>)}</Menu.Item>
+                                                                            </div>
+                                                                            <div className="px-1 py-1">
+                                                                                <Menu.Item>{({ active }) => (<button onClick={() => handleDeleteLink(item)} className={`${active ? 'bg-red-500 text-white' : 'text-red-600'} group flex w-full items-center rounded-md px-2 py-2 text-sm`}><Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />Delete</button>)}</Menu.Item>
+                                                                            </div>
+                                                                        </Menu.Items>
+                                                                    </Transition>
+                                                                </Menu>
                                                             </div>
                                                         </div>
                                                     );
@@ -251,18 +286,29 @@ export default function EventDetailModal({ isOpen, onClose, event, onDeleteEvent
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-3">
-                                                            <button aria-label={`Download ${item.name}`} title={`Download ${item.name}`} className="text-[#5e6b66] hover:text-green-800">
-                                                                <Download size={18} />
-                                                            </button>
-                                                            <button aria-label={`More options for ${item.name}`} title={`More options for ${item.name}`} className="text-[#5e6b66] hover:text-green-800">
-                                                                <MoreHorizontal size={18} />
-                                                            </button>
+                                                            <button aria-label={`Download ${item.name}`} title={`Download ${item.name}`} className="text-[#5e6b66] hover:text-green-800"><Download size={18} /></button>
+                                                            
+                                                            {/* --- FILE ACTIONS DROPDOWN --- */}
+                                                            <Menu as="div" className="relative inline-block text-left">
+                                                                <Menu.Button className="p-1 text-[#5e6b66] hover:text-green-800 rounded-full">
+                                                                    <MoreHorizontal size={18} aria-hidden="true" />
+                                                                </Menu.Button>
+                                                                <Transition as={Fragment} enter="transition ease-out duration-100" enterFrom="transform opacity-0 scale-95" enterTo="transform opacity-100 scale-100" leave="transition ease-in duration-75" leaveFrom="transform opacity-100 scale-100" leaveTo="transform opacity-0 scale-95">
+                                                                    <Menu.Items className="absolute right-0 mt-2 w-32 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-none z-10">
+                                                                        <div className="px-1 py-1">
+                                                                            <Menu.Item>{({ active }) => (<button onClick={() => handleShareFile(item)} className={`${active ? 'bg-gray-100' : ''} group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-700`}><Share2 className="mr-2 h-4 w-4" aria-hidden="true" />Share</button>)}</Menu.Item>
+                                                                        </div>
+                                                                        <div className="px-1 py-1">
+                                                                            <Menu.Item>{({ active }) => (<button onClick={() => handleDeleteFile(item)} className={`${active ? 'bg-red-500 text-white' : 'text-red-600'} group flex w-full items-center rounded-md px-2 py-2 text-sm`}><Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />Delete</button>)}</Menu.Item>
+                                                                        </div>
+                                                                    </Menu.Items>
+                                                                </Transition>
+                                                            </Menu>
                                                         </div>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
-
                                     </div>
                                 </Dialog.Panel>
                             </Transition.Child>
