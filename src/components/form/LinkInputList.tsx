@@ -1,193 +1,196 @@
-/* eslint-disable @next/next/no-img-element */
+"use client";
+
 import { useFieldArray, useFormContext } from "react-hook-form";
-import { useState } from "react";
-import { X, ExternalLink } from "lucide-react";
-import { fetchLinkMetadata } from "@/utils/fetchLinkMetadata";
-import Spinner from "../Spinner";
+import { useState, useRef, useEffect, RefObject } from "react";
+import Image from "next/image";
+import { X, Plus, MoreHorizontal, Trash2, Link, Share2 } from "lucide-react";
 import SpinnerSmall from "../ui/Spinner";
 
-function isValidUrl(url: string) {
+// Helper hook to detect clicks outside an element
+const useOnClickOutside = (ref: RefObject<HTMLDivElement | null>, handler: () => void) => {
+  useEffect(() => {
+    const listener = (event: MouseEvent | TouchEvent) => {
+      if (!ref.current || ref.current.contains(event.target as Node)) return;
+      handler();
+    };
+    document.addEventListener("mousedown", listener);
+    document.addEventListener("touchstart", listener);
+    return () => {
+      document.removeEventListener("mousedown", listener);
+      document.removeEventListener("touchstart", listener);
+    };
+  }, [ref, handler]);
+};
+
+function isValidUrl(url: string): boolean {
   try {
-    new URL(url);
-    return true;
+    const newUrl = new URL(url);
+    return newUrl.protocol === "http:" || newUrl.protocol === "https:";
   } catch {
     return false;
   }
 }
 
-export function LinkInputList({ name = "links" }: { name?: string }) {
-  const { control, register, setValue, watch } = useFormContext();
-  const { fields, append, remove, replace } = useFieldArray({ control, name });
-  const links = watch("links") as {
-    url: string;
-    title?: string;
-    favicon?: string;
-  }[];
-  const [editing, setEditing] = useState(false);
-  const [errorIndexes, setErrorIndexes] = useState<number[]>([]);
+interface Link {
+  id?: string;
+  url: string;
+  title?: string;
+  favicon?: string;
+}
 
-  const [loading, setLoading] = useState(false);
-  const [metadata, setMetadata] = useState<{ [idx: number]: any }>({});
-  // Acciones principales
+export function LinkInputList({ name = "links" }: { name?: string }) {
+  const { control, register, getValues } = useFormContext();
+  const { fields, append, remove, replace } = useFieldArray({ control, name });
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorIndexes, setErrorIndexes] = useState<number[]>([]);
+  
+  const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  
+  useOnClickOutside(menuRef, () => setOpenMenuIndex(null));
+
   const handleAdd = () => {
-    setEditing(true);
-    append({ url: "", title: "", favicon: "" });
+    setIsEditing(true);
+    if (fields.length === 0) {
+      append({ url: "", title: "", favicon: "" });
+    }
   };
 
   const handleDone = async () => {
-    console.log("handleDone")
-    let errors: number[] = [];
-    const validLinks: { url: string; favicon: string; title: string }[] = [];
-    setLoading(true);
+    setIsLoading(true);
+    const errors: number[] = [];
+    
+    const currentFields = getValues(name) || [];
 
-    // Recopila promises para fetch
-    const metaPromises = links.map(async (link: any, idx: number) => {
-      if (!link.url) return null;
-      if (!isValidUrl(link.url)) {
-        errors.push(idx);
-        return null;
-      }
-      const meta = await fetchLinkMetadata(link.url);
-      console.log("Fetched metadata for", link.url, meta);
-      return meta
-        ? { url: link.url, title: meta.title, favicon: meta.favicon.url }
-        : { url: link.url, title: "", favicon: "" };
-    });
+    const validLinks = currentFields
+      .map((field: Link, idx: number) => {
+        if (!field.url || !isValidUrl(field.url)) {
+          if (field.url) errors.push(idx);
+          return null;
+        }
+        
+        const hostname = new URL(field.url).hostname;
+        const favicon = `https://www.google.com/s2/favicons?sz=64&domain=${hostname}`;
+        
+        return { url: field.url, title: hostname, favicon };
+      })
+      .filter(Boolean) as Link[];
 
-    console.log("metaPromises", metaPromises)
-
-    const allMeta = await Promise.all(metaPromises);
-    setLoading(false);
-
+    replace(validLinks);
     setErrorIndexes(errors);
+    setIsLoading(false);
 
-    if (errors.length > 0) {
-      console.log("si hay errores", errors) 
-      return
+    if (errors.length === 0) {
+      setIsEditing(false);
     }
-    // Quitar vacíos y quedarnos con los válidos
-    replace(allMeta.filter(Boolean) as any);
-    setEditing(false);
-    setMetadata({}); // limpiar
   };
+  
   const handleRemove = (idx: number) => {
     remove(idx);
-    setErrorIndexes((errs) => errs.filter((e) => e !== idx));
-    if (fields.length - 1 === 0) setEditing(false);
+    setOpenMenuIndex(null);
   };
 
-  // UI
+  // --- ADDED BACK: Handlers for copy and share ---
+  const handleCopy = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      alert("Link copied to clipboard!"); // Or use a more subtle toast notification
+    } catch {
+      alert("Failed to copy link.");
+    }
+    setOpenMenuIndex(null);
+  };
+  
+  const handleShare = async (link: Link) => {
+    if (navigator.share && link.url && link.title) {
+      try {
+        await navigator.share({
+          title: link.title,
+          url: link.url,
+        });
+      } catch (err) {
+        console.error("Sharing failed", err);
+      }
+    } else {
+      alert("Web Share API is not supported in your browser.");
+    }
+    setOpenMenuIndex(null);
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <label className="font-medium">Links</label>
-        {!editing ? (
+        <span className="text-sm font-medium text-gray-700">Links</span>
+        {!isEditing ? (
           <button
             type="button"
-            className="text-xs text-[#758C5D] mt-1 px-2 py-1 rounded border border-[#758C5D] hover:bg-[#F1F3EE]"
             onClick={handleAdd}
+            className="flex items-center justify-center gap-1.5 px-3 py-1.5 border border-[#697d67] text-[#697d67] bg-transparent rounded-full text-sm font-medium hover:bg-gray-50 transition-colors"
           >
-            Add +
+            <span>Add</span>
+            <Plus size={16} />
           </button>
         ) : (
-          <button
-            type="button"
-            className="text-xs text-white bg-[#758C5D] rounded px-3 py-1"
-            onClick={handleDone}
-            disabled={loading}
-          >
-            {loading ? <SpinnerSmall /> : "Done"}
+          <button type="button" className="text-xs text-white bg-[#697d67] rounded-full px-4 py-2 focus:outline-none focus:ring-0" onClick={handleDone} disabled={isLoading}>
+            {isLoading ? <SpinnerSmall /> : "Done"}
           </button>
         )}
       </div>
-      {/* Inputs para links abiertos */}
-      {editing && (
+
+      {isEditing && (
         <div className="space-y-2">
           {fields.map((field, idx) => (
             <div key={field.id} className="flex items-center gap-2">
-              <input
-                {...register(`${name}.${idx}.url`)}
-                placeholder="Enter link"
-                disabled={loading}
-                className={`flex-1 border p-2 rounded-md text-sm outline-none focus:ring-2 focus:ring-[#758C5D] focus:border-transparent ${
-                  errorIndexes.includes(idx)
-                    ? "border-red-500"
-                    : "border-gray-300"
-                }`}
-              />
-              <button
-                type="button"
-                className="text-gray-400"
-                onClick={() => handleRemove(idx)}
-              >
-                <X size={16} />
-              </button>
+              <input {...register(`${name}.${idx}.url`)} placeholder="Enter link" disabled={isLoading} className={`flex-1 border p-2 rounded-md text-sm outline-none focus:ring-0 ${errorIndexes.includes(idx) ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-gray-500"}`} />
+              <button type="button" className="text-gray-400 hover:text-gray-700 focus:outline-none focus:ring-0" onClick={() => remove(idx)} title="Remove link"><X size={20} /></button>
             </div>
           ))}
-          <button
-            type="button"
-            className="flex items-center gap-1 text-xs text-[#758C5D] mt-1"
-            onClick={() => append({ url: "" })}
-          >
-            <span className="text-xl">＋</span> Add more link
+          <button type="button" className="flex items-center gap-2 text-gray-600 mt-2 text-sm hover:text-black focus:outline-none focus:ring-0" onClick={() => append({ url: "" })}>
+            <div className="flex h-5 w-5 items-center justify-center rounded-full border border-gray-400"><Plus size={12} /></div>
+            <span>Add more</span>
           </button>
-          {errorIndexes.length > 0 && (
-            <div className="text-red-500 text-xs">
-              Please enter valid URLs in all fields!
-            </div>
-          )}
+          {errorIndexes.length > 0 && <div className="text-red-500 text-xs pt-1">Please enter valid URLs for the highlighted fields.</div>}
         </div>
       )}
-      {/* Si no está editando, mostrar las tarjetas */}
-      {!editing && links.length > 0 && (
-        <div className="flex flex-col gap-2 mt-2">
-          {links.map((l: any, idx: number) => (
-            <div
-              key={idx}
-              className="flex items-center gap-2  px-3 py-2 shadow rounded-md border border-gray-300 hover:bg-gray-50 transition-all cursor-pointer"
-            >
-              <img
-                src={l.favicon || "/assets/icons/loading.svg"}
-                alt=""
-                className="w-5 h-5 rounded"
-                onError={(e) =>
-                  (e.currentTarget.src = "/assets/icons/loading.svg")
-                }
-              />
-              <div className="flex flex-col flex-1">
-                <a
-                  href={l.url}
-                  className="truncate max-w-[180px] text-xs text-gray-600"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <span className="font-semibold truncate max-w-[180px] text-[#3A76FF]">
-                    {l.title || l.url.replace(/^https?:\/\//, "")}
-                  </span>
-                </a>
+
+      {!isEditing && fields.length > 0 && (
+        <div className="space-y-2">
+          {fields.map((field, idx) => {
+            const link = field as unknown as Link;
+            return (
+              <div key={field.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <Image src={link.favicon || "/default-favicon.png"} alt={`${link.title || 'link'} favicon`} className="rounded flex-shrink-0" width={20} height={20} onError={(e) => (e.currentTarget.src = "/default-favicon.png")} />
+                  <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-blue-600 hover:underline truncate" title={link.title || ''}>
+                    {link.title || link.url}
+                  </a>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+                  {/* ADDED: Copy button */}
+                  <button type="button" onClick={() => handleCopy(link.url)} className="text-gray-500 hover:text-gray-800" title="Copy link">
+                    <Link size={18} />
+                  </button>
+                  <div className="relative" ref={openMenuIndex === idx ? menuRef : null}>
+                    <button type="button" onClick={() => setOpenMenuIndex(openMenuIndex === idx ? null : idx)} className="text-gray-500 hover:text-gray-800" title="More options">
+                      <MoreHorizontal size={20} />
+                    </button>
+                    {openMenuIndex === idx && (
+                      <div className="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                        <ul>
+                          {!!navigator.share && (
+                            <li><button onClick={() => handleShare(link)} className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><Share2 size={16} className="mr-2" />Share</button></li>
+                          )}
+                          <li><button onClick={() => handleRemove(idx)} className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"><Trash2 size={16} className="mr-2" />Delete</button></li>
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-              <a
-                href={l.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-1"
-                title="Open"
-              >
-                <ExternalLink size={16} />
-              </a>
-              <button
-                type="button"
-                className="ml-1"
-                title="Delete"
-                onClick={() => {
-                  handleRemove(idx);
-                  if (links.length === 1) setEditing(false);
-                }}
-              >
-                <X size={16} />
-              </button>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

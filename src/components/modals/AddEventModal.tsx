@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition, Listbox } from '@headlessui/react';
+import { useForm, FormProvider } from "react-hook-form";
 import { X, Calendar, CalendarClock, CheckIcon, ChevronDown, Plus } from 'lucide-react';
 import Image from 'next/image';
 import { EventCategory } from '@/app/calendar/page';
@@ -10,6 +11,7 @@ import { toISODateString } from '@/utils/getDates';
 import CheckSquare from '@/assets/icons/add_task.svg';
 import Users from '@/assets/icons/meeting_add.svg';
 import InvitePeoplePopover, { Person } from '@/components/ui/InvitePeoplePopover';
+import { LinkInputList } from '../form/LinkInputList';
 
 interface AddEventModalProps {
     isOpen: boolean;
@@ -33,10 +35,11 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
     const [visibilityOption, setVisibilityOption] = useState('Only Invited');
     const [invitedPeople, setInvitedPeople] = useState<Person[]>([]);
     const dateInputRef = React.useRef<HTMLInputElement>(null);
+    const methods = useForm();
 
     useEffect(() => {
         if (isOpen) {
-            setDate(''); 
+            setDate('');
             setTitle('');
             setStartTime('10:00');
             setEndTime('11:00');
@@ -48,14 +51,14 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
             setNotifyOption('1 hour before');
             setVisibilityOption('Only Invited');
             setInvitedPeople([]);
+            methods.reset();
         }
-    }, [isOpen, initialDate]);
+    }, [isOpen, initialDate, methods]);
 
     const handleDoneInviting = (people: Person[]) => {
         setInvitedPeople(people);
     };
 
-    // 1. Added function to handle removing an invited person
     const handleRemovePerson = (personToRemove: Person) => {
         setInvitedPeople(prev => prev.filter(p => p.id !== personToRemove.id));
     };
@@ -89,8 +92,11 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
         { value: 'Public', label: 'Public' },
     ];
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+    interface AddEventFormData {
+        links?: string[];
+    }
+
+    const onSubmit = (data: AddEventFormData) => {
         if (!title.trim()) {
             setError('Title is required.');
             return;
@@ -118,6 +124,7 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
             type: activeType,
             bgColor: selectedCategory.bgColor,
             rectColor: selectedCategory.rectColor,
+            links: data.links || [],
         };
 
         if (isRecurring) {
@@ -155,10 +162,10 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
                 </Transition.Child>
 
                 <div className="fixed inset-0 overflow-y-auto">
-                    <div className="flex min-h-full items-center justify-end p-2 text-center">
+                    <div className="flex items-center justify-end min-h-full p-2 text-center">
                         <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 translate-x-full" enterTo="opacity-100 translate-x-0" leave="ease-in duration-200" leaveFrom="opacity-100 translate-x-0" leaveTo="opacity-0 translate-x-full">
-                            <Dialog.Panel className="relative w-full max-w-lg max-h-[calc(100vh-1rem)] transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all flex flex-col">
-                                <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#697d67]" aria-label="Close add event modal">
+                            <Dialog.Panel className="relative flex flex-col w-full max-w-lg max-h-[calc(100vh-1rem)] p-6 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
+                                <button onClick={onClose} className="absolute top-4 right-4 p-2 text-gray-500 transition-colors rounded-full hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#697d67]" aria-label="Close add event modal">
                                     <X size={32} />
                                 </button>
 
@@ -167,38 +174,185 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
                                         Add Event
                                     </Dialog.Title>
                                 </div>
-                                
-                                <form onSubmit={handleSubmit} className="mt-4 flex-1 overflow-y-auto pr-2 space-y-9">
-                                    <div>
-                                        <label className="block text-sm font-medium text-black mb-2 mt-3">Frequently Requested</label>
-                                        <div className="grid grid-cols-3 gap-2">
-                                            <button type="button" onClick={() => setActiveType('Tasks')} className={`flex flex-col items-start justify-center gap-1 py-4 px-3 rounded-lg border text-sm font-medium transition-colors ${activeType === 'Tasks' ? 'bg-[#e9f2e7] border-[#697d67] text-[#697d67]' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}>
-                                                <CheckSquare title="Task Icon" size={24} className="text-[#697d67]" />
-                                                <span>Task</span>
-                                            </button>
-                                            <button type="button" onClick={() => setActiveType('Meetings')} className={`flex flex-col items-start justify-center gap-1 py-4 px-3 rounded-lg border text-sm font-medium transition-colors ${activeType === 'Meetings' ? 'bg-[#e9f2e7] border-[#697d67] text-[#697d67]' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}>
-                                                <Users title="Meeting Icon" size={24} className="text-[#697d67]" />
-                                                <span>Meeting</span>
-                                            </button>
-                                            <button type="button" onClick={() => setActiveType('Time Off')} className={`flex flex-col items-start justify-center gap-1 py-4 px-3 rounded-lg border text-sm font-medium transition-colors ${activeType === 'Time Off' ? 'bg-[#e9f2e7] border-[#697d67] text-[#697d67]' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}>
-                                                <CalendarClock size={24} className="text-[#697d67]" />
-                                                <span>Time Off</span>
-                                            </button>
+
+                                <FormProvider {...methods}>
+                                    <form onSubmit={methods.handleSubmit(onSubmit)} className="flex-1 mt-4 pr-2 overflow-y-auto space-y-9">
+                                        <div>
+                                            <label className="block mb-2 mt-3 text-sm font-medium text-black">Frequently Requested</label>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                <button type="button" onClick={() => setActiveType('Tasks')} className={`flex flex-col items-start justify-center gap-1 py-4 px-3 rounded-lg border text-sm font-medium transition-colors ${activeType === 'Tasks' ? 'bg-[#e9f2e7] border-[#697d67] text-[#697d67]' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}>
+                                                    <CheckSquare title="Task Icon" size={24} className="text-[#697d67]" />
+                                                    <span>Task</span>
+                                                </button>
+                                                <button type="button" onClick={() => setActiveType('Meetings')} className={`flex flex-col items-start justify-center gap-1 py-4 px-3 rounded-lg border text-sm font-medium transition-colors ${activeType === 'Meetings' ? 'bg-[#e9f2e7] border-[#697d67] text-[#697d67]' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}>
+                                                    <Users title="Meeting Icon" size={24} className="text-[#697d67]" />
+                                                    <span>Meeting</span>
+                                                </button>
+                                                <button type="button" onClick={() => setActiveType('Time Off')} className={`flex flex-col items-start justify-center gap-1 py-4 px-3 rounded-lg border text-sm font-medium transition-colors ${activeType === 'Time Off' ? 'bg-[#e9f2e7] border-[#697d67] text-[#697d67]' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}>
+                                                    <CalendarClock size={24} className="text-[#697d67]" />
+                                                    <span>Time Off</span>
+                                                </button>
+                                            </div>
+                                            <label className="block mt-5 mb-2 text-sm font-medium text-black">Or choose from the list</label>
+                                            {otherCategoryOptions.length > 0 && (
+                                                <div className="mt-2">
+                                                    <Listbox value={activeType} onChange={setActiveType}>
+                                                        <div className="relative">
+                                                            <Listbox.Button className="relative w-full h-[50px] py-2 pl-3 pr-10 text-left bg-white border border-gray-200 rounded-md shadow-sm cursor-default focus:outline-none sm:text-sm">
+                                                                <span className="block truncate">{buttonText}</span>
+                                                                <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none"><ChevronDown className={`h-5 w-5 text-gray-400 transition-transform duration-200`} aria-hidden="true" /></span>
+                                                            </Listbox.Button>
+                                                            <Transition as={Fragment} leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
+                                                                <Listbox.Options className="absolute z-50 w-full py-1 mt-1 overflow-auto text-base bg-white border border-gray-300 rounded-md shadow-lg max-h-60 focus:outline-none sm:text-sm">
+                                                                    {otherCategoryOptions.map((option) => (
+                                                                        <Listbox.Option key={option.value} className={({ active }) => `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? 'bg-gray-100' : 'text-gray-900'}`} value={option.value}>
+                                                                            {({ selected }) => (<><span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>{option.label}</span>{selected ? <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#697d67]"><CheckIcon className="w-5 h-5" aria-hidden="true" /></span> : null}</>)}
+                                                                        </Listbox.Option>
+                                                                    ))}
+                                                                </Listbox.Options>
+                                                            </Transition>
+                                                        </div>
+                                                    </Listbox>
+                                                </div>
+                                            )}
+                                            <div className="mt-4 border-t border-gray-200" />
                                         </div>
-                                        <label className="block text-sm font-medium text-black mb-2 mt-5">Or choose from the list</label>
-                                        {otherCategoryOptions.length > 0 && (
-                                            <div className="mt-2">
-                                                <Listbox value={activeType} onChange={setActiveType}>
+
+                                        <div>
+                                            <label htmlFor="title" className="block text-sm font-medium text-gray-700">Event Title</label>
+                                            <input type="text" id="title" value={title} onChange={(e) => setTitle(e.target.value)} className="block w-full mt-1 h-[50px] px-3 py-2 placeholder-gray-400 border-gray-400 rounded-md shadow-sm sm:text-sm focus:ring-0 focus:outline-none focus:border-[#697d67]" placeholder="Enter Event Title" />
+                                        </div>
+
+                                        {error && <p className="text-sm text-red-600 -my-2">{error}</p>}
+
+                                        <div className="flex flex-col gap-4 sm:flex-row">
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <label htmlFor="date-button" className="block text-sm font-medium text-gray-700">Date</label>
+                                                    <div className="flex items-center">
+                                                        <input
+                                                            id="recurring"
+                                                            type="checkbox"
+                                                            checked={isRecurring}
+                                                            onChange={(e) => setIsRecurring(e.target.checked)}
+                                                            className="w-4 h-4 text-[#697d67] border-gray-400 rounded accent-[#697d67] focus:ring-[#697d67]"
+                                                        />
+                                                        <label htmlFor="recurring" className="block ml-2 text-sm text-gray-600">Recurring</label>
+                                                    </div>
+                                                </div>
+                                                <div className="relative">
+                                                    <div
+                                                        id="date-button"
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        onClick={() => dateInputRef.current?.showPicker()}
+                                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') dateInputRef.current?.showPicker(); }}
+                                                        className="flex items-center justify-between w-full h-[50px] pl-4 pr-4 text-left border border-gray-200 rounded-lg shadow-sm cursor-pointer focus:outline-none"
+                                                    >
+                                                        <span className={date ? "text-gray-900" : "text-gray-500"}>
+                                                            {date ? new Date(date + 'T00:00:00').toLocaleDateString('en-US', { timeZone: 'UTC' }) : "Select Date"}
+                                                        </span>
+
+                                                        <div className="flex items-center gap-2">
+                                                            {date && (
+                                                                <span
+                                                                    role="button"
+                                                                    tabIndex={0}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setDate('');
+                                                                    }}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                                            e.stopPropagation();
+                                                                            setDate('');
+                                                                        }
+                                                                    }}
+                                                                    aria-label="Clear date"
+                                                                    className="p-1 text-gray-400 rounded-full cursor-pointer hover:bg-gray-200 hover:text-gray-600 focus:outline-none"
+                                                                >
+                                                                    <X size={16} />
+                                                                </span>
+                                                            )}
+                                                            <Calendar className="h-5 w-5 text-[#697d67]" aria-hidden="true" />
+                                                        </div>
+                                                    </div>
+                                                    <input
+                                                        ref={dateInputRef}
+                                                        type="date"
+                                                        value={date}
+                                                        onChange={(e) => setDate(e.target.value)}
+                                                        className="absolute top-0 left-0 w-1 h-1 opacity-0"
+                                                        aria-hidden="true"
+                                                        tabIndex={-1}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">Time</label>
+                                                    <div className="flex items-center">
+                                                        <input
+                                                            id="all-day"
+                                                            type="checkbox"
+                                                            checked={isAllDay}
+                                                            onChange={(e) => setIsAllDay(e.target.checked)}
+                                                            className="w-4 h-4 text-[#697d67] border-gray-400 rounded accent-[#697d67] focus:ring-[#697d67]"
+                                                        />
+                                                        <label htmlFor="all-day" className="block ml-2 text-sm text-gray-600">All Day</label>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="time"
+                                                        id="startTime"
+                                                        title="Start time"
+                                                        value={startTime}
+                                                        onChange={(e) => setStartTime(e.target.value)}
+                                                        disabled={isAllDay}
+                                                        className="flex items-center justify-center w-full h-[50px] text-center border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-0 text-sm disabled:bg-gray-100 [&::-webkit-calendar-picker-indicator]:hidden"
+                                                    />
+                                                    <span className="text-gray-500">–</span>
+                                                    <input
+                                                        type="time"
+                                                        id="endTime"
+                                                        title="End time"
+                                                        value={endTime}
+                                                        onChange={(e) => setEndTime(e.target.value)}
+                                                        disabled={isAllDay}
+                                                        className="flex items-center justify-center w-full h-[50px] text-center border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-0 text-sm disabled:bg-gray-100 [&::-webkit-calendar-picker-indicator]:hidden"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-4">
+                                            <div className="flex-1">
+                                                <label className="block mb-1 text-sm font-medium text-gray-700">Notify</label>
+                                                <Listbox value={notifyOption} onChange={setNotifyOption}>
                                                     <div className="relative">
-                                                        <Listbox.Button className="relative h-[50px] w-full cursor-default rounded-md border border-gray-200 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:outline-none sm:text-sm">
-                                                            <span className="block truncate">{buttonText}</span>
-                                                            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"><ChevronDown className={`h-5 w-5 text-gray-400 transition-transform duration-200`} aria-hidden="true"/></span>
+                                                        <Listbox.Button className="relative w-full h-[50px] py-2 pl-3 pr-10 text-left bg-white border border-gray-200 rounded-md shadow-sm cursor-default focus:outline-none sm:text-sm">
+                                                            <span className="block truncate">{notifyOption}</span>
+                                                            <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                                                                <ChevronDown className="w-5 h-5 text-gray-400" aria-hidden="true" />
+                                                            </span>
                                                         </Listbox.Button>
                                                         <Transition as={Fragment} leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
-                                                            <Listbox.Options className="absolute z-50 mt-1 max-h-60 left-0 right-0 overflow-auto rounded-md bg-white py-1 text-base shadow-lg focus:outline-none sm:text-sm border border-gray-300">
-                                                                {otherCategoryOptions.map((option) => (
+                                                            <Listbox.Options className="absolute z-50 w-full py-1 mt-1 overflow-auto text-base bg-white border border-gray-300 rounded-md shadow-lg max-h-60 focus:outline-none sm:text-sm">
+                                                                {notifyOptions.map((option) => (
                                                                     <Listbox.Option key={option.value} className={({ active }) => `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? 'bg-gray-100' : 'text-gray-900'}`} value={option.value}>
-                                                                        {({ selected }) => (<><span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>{option.label}</span>{selected ? <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#697d67]"><CheckIcon className="h-5 w-5" aria-hidden="true" /></span> : null}</>)}
+                                                                        {({ selected }) => (
+                                                                            <>
+                                                                                <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
+                                                                                    {option.label}
+                                                                                </span>
+                                                                                {selected ? (
+                                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#697d67]">
+                                                                                        <CheckIcon className="w-5 h-5" aria-hidden="true" />
+                                                                                    </span>
+                                                                                ) : null}
+                                                                            </>
+                                                                        )}
                                                                     </Listbox.Option>
                                                                 ))}
                                                             </Listbox.Options>
@@ -206,278 +360,124 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
                                                     </div>
                                                 </Listbox>
                                             </div>
-                                        )}
-                                        <div className="mt-4 border-t border-gray-200" />
-                                    </div>
-                                    
-                                    <div>
-                                        <label htmlFor="title" className="block text-sm font-medium text-gray-700">Event Title</label>
-                                        <input type="text" id="title" value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 block w-full h-[50px] rounded-md border-gray-400 shadow-sm px-3 py-2 placeholder:text-gray-400 sm:text-sm focus:ring-0 focus:outline-none focus:border-[#697d67]" placeholder="Enter Event Title" />
-                                    </div>
 
-                                    {error && <p className="text-sm text-red-600 -my-2">{error}</p>}
-                                    
-                                    <div className="flex flex-col sm:flex-row gap-4">
-                                        <div className="flex-1">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <label htmlFor="date-button" className="block text-sm font-medium text-gray-700">Date</label>
-                                                <div className="flex items-center">
-                                                    <input 
-                                                        id="recurring" 
-                                                        type="checkbox" 
-                                                        checked={isRecurring} 
-                                                        onChange={(e) => setIsRecurring(e.target.checked)} 
-                                                        className="h-4 w-4 rounded border-gray-400 text-[#697d67] focus:ring-[#697d67] accent-[#697d67]" 
-                                                    />
-                                                    <label htmlFor="recurring" className="ml-2 block text-sm text-gray-600">Recurring</label>
-                                                </div>
-                                            </div>
-                                            <div className="relative">
-                                                <div
-                                                    id="date-button"
-                                                    role="button"
-                                                    tabIndex={0}
-                                                    onClick={() => dateInputRef.current?.showPicker()}
-                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') dateInputRef.current?.showPicker(); }}
-                                                    className="block w-full h-[50px] rounded-lg border border-gray-200 shadow-sm pl-4 pr-4 text-left focus:outline-none flex items-center justify-between cursor-pointer"
-                                                >
-                                                    <span className={date ? "text-gray-900" : "text-gray-500"}>
-                                                        {date ? new Date(date + 'T00:00:00').toLocaleDateString('en-US', { timeZone: 'UTC' }) : "Select Date"}
-                                                    </span>
-                                                    
-                                                    <div className="flex items-center gap-2">
-                                                        {date && (
-                                                            <span
-                                                                role="button"
-                                                                tabIndex={0}
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setDate('');
-                                                                }}
-                                                                onKeyDown={(e) => {
-                                                                    if (e.key === 'Enter' || e.key === ' ') {
-                                                                        e.stopPropagation();
-                                                                        setDate('');
-                                                                    }
-                                                                }}
-                                                                aria-label="Clear date"
-                                                                className="p-1 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600 cursor-pointer focus:outline-none"
-                                                            >
-                                                                <X size={16} />
+                                            <div className="flex-1">
+                                                <label className="block mb-1 text-sm font-medium text-gray-700">Visibility</label>
+                                                <Listbox value={visibilityOption} onChange={setVisibilityOption}>
+                                                    <div className="relative">
+                                                        <Listbox.Button className="relative w-full h-[50px] py-2 pl-3 pr-10 text-left bg-white border border-gray-200 rounded-md shadow-sm cursor-default focus:outline-none sm:text-sm">
+                                                            <span className="block truncate">{visibilityOption}</span>
+                                                            <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                                                                <ChevronDown className="w-5 h-5 text-gray-400" aria-hidden="true" />
                                                             </span>
-                                                        )}
-                                                        <Calendar className="h-5 w-5 text-[#697d67]" aria-hidden="true" />
+                                                        </Listbox.Button>
+                                                        <Transition as={Fragment} leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
+                                                            <Listbox.Options className="absolute z-50 w-full py-1 mt-1 overflow-auto text-base bg-white border border-gray-300 rounded-md shadow-lg max-h-60 focus:outline-none sm:text-sm">
+                                                                {visibilityOptions.map((option) => (
+                                                                    <Listbox.Option key={option.value} className={({ active }) => `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? 'bg-gray-100' : 'text-gray-900'}`} value={option.value}>
+                                                                        {({ selected }) => (
+                                                                            <>
+                                                                                <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
+                                                                                    {option.label}
+                                                                                </span>
+                                                                                {selected ? (
+                                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#697d67]">
+                                                                                        <CheckIcon className="w-5 h-5" aria-hidden="true" />
+                                                                                    </span>
+                                                                                ) : null}
+                                                                            </>
+                                                                        )}
+                                                                    </Listbox.Option>
+                                                                ))}
+                                                            </Listbox.Options>
+                                                        </Transition>
                                                     </div>
-                                                </div>
-                                                <input
-                                                    ref={dateInputRef}
-                                                    type="date"
-                                                    value={date}
-                                                    onChange={(e) => setDate(e.target.value)}
-                                                    className="opacity-0 absolute top-0 left-0 w-1 h-1"
-                                                    aria-hidden="true"
-                                                    tabIndex={-1}
-                                                />
+                                                </Listbox>
                                             </div>
                                         </div>
-                                        <div className="flex-1">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">Time</label>
-                                                <div className="flex items-center">
-                                                    <input 
-                                                        id="all-day" 
-                                                        type="checkbox" 
-                                                        checked={isAllDay} 
-                                                        onChange={(e) => setIsAllDay(e.target.checked)} 
-                                                        className="h-4 w-4 rounded border-gray-400 text-[#697d67] focus:ring-[#697d67] accent-[#697d67]" 
-                                                    />
-                                                    <label htmlFor="all-day" className="ml-2 block text-sm text-gray-600">All Day</label>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <input 
-                                                    type="time" 
-                                                    id="startTime" 
-                                                    title="Start time" 
-                                                    value={startTime} 
-                                                    onChange={(e) => setStartTime(e.target.value)} 
-                                                    disabled={isAllDay} 
-                                                    className="flex items-center justify-center w-full h-[50px] rounded-lg border border-gray-200 shadow-sm focus:outline-none focus:ring-0 text-center text-sm disabled:bg-gray-100 [&::-webkit-calendar-picker-indicator]:hidden" 
-                                                />
-                                                <span className="text-gray-500">–</span>
-                                                <input 
-                                                    type="time" 
-                                                    id="endTime" 
-                                                    title="End time" 
-                                                    value={endTime} 
-                                                    onChange={(e) => setEndTime(e.target.value)} 
-                                                    disabled={isAllDay} 
-                                                    className="flex items-center justify-center w-full h-[50px] rounded-lg border border-gray-200 shadow-sm focus:outline-none focus:ring-0 text-center text-sm disabled:bg-gray-100 [&::-webkit-calendar-picker-indicator]:hidden" 
-                                                />
-                                            </div>
+                                        <div>
+                                            <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
+                                            <textarea
+                                                id="description"
+                                                value={description}
+                                                onChange={(e) => setDescription(e.target.value)}
+                                                rows={5}
+                                                className="block w-full px-3 py-2 mt-2 border-gray-200 rounded-md shadow-sm sm:text-sm focus:outline-none focus:ring-none"
+                                                placeholder="Enter Description">
+                                            </textarea>
                                         </div>
-                                    </div>
 
-                                    <div className="flex gap-4">
-                                        <div className="flex-1">
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Notify</label>
-                                            <Listbox value={notifyOption} onChange={setNotifyOption}>
-                                                <div className="relative">
-                                                    <Listbox.Button className="relative h-[50px] w-full cursor-default rounded-md border border-gray-200 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:outline-none sm:text-sm">
-                                                        <span className="block truncate">{notifyOption}</span>
-                                                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                                            <ChevronDown className="h-5 w-5 text-gray-400" aria-hidden="true" />
-                                                        </span>
-                                                    </Listbox.Button>
-                                                    <Transition as={Fragment} leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
-                                                        <Listbox.Options className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg focus:outline-none sm:text-sm border border-gray-300">
-                                                            {notifyOptions.map((option) => (
-                                                                <Listbox.Option key={option.value} className={({ active }) => `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? 'bg-gray-100' : 'text-gray-900'}`} value={option.value}>
-                                                                    {({ selected }) => (
-                                                                        <>
-                                                                            <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
-                                                                                {option.label}
-                                                                            </span>
-                                                                            {selected ? (
-                                                                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#697d67]">
-                                                                                    <CheckIcon className="h-5 w-5" aria-hidden="true" />
-                                                                                </span>
-                                                                            ) : null}
-                                                                        </>
-                                                                    )}
-                                                                </Listbox.Option>
-                                                            ))}
-                                                        </Listbox.Options>
-                                                    </Transition>
-                                                </div>
-                                            </Listbox>
-                                        </div>
-                                        
-                                        <div className="flex-1">
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
-                                            <Listbox value={visibilityOption} onChange={setVisibilityOption}>
-                                                <div className="relative">
-                                                    <Listbox.Button className="relative h-[50px] w-full cursor-default rounded-md border border-gray-200 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:outline-none sm:text-sm">
-                                                        <span className="block truncate">{visibilityOption}</span>
-                                                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                                            <ChevronDown className="h-5 w-5 text-gray-400" aria-hidden="true" />
-                                                        </span>
-                                                    </Listbox.Button>
-                                                    <Transition as={Fragment} leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
-                                                        <Listbox.Options className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg focus:outline-none sm:text-sm border border-gray-300">
-                                                            {visibilityOptions.map((option) => (
-                                                                <Listbox.Option key={option.value} className={({ active }) => `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? 'bg-gray-100' : 'text-gray-900'}`} value={option.value}>
-                                                                    {({ selected }) => (
-                                                                        <>
-                                                                            <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
-                                                                                {option.label}
-                                                                            </span>
-                                                                            {selected ? (
-                                                                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#697d67]">
-                                                                                    <CheckIcon className="h-5 w-5" aria-hidden="true" />
-                                                                                </span>
-                                                                            ) : null}
-                                                                        </>
-                                                                    )}
-                                                                </Listbox.Option>
-                                                            ))}
-                                                        </Listbox.Options>
-                                                    </Transition>
-                                                </div>
-                                            </Listbox>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
-                                        <textarea 
-                                            id="description" 
-                                            value={description} 
-                                            onChange={(e) => setDescription(e.target.value)} 
-                                            rows={5} 
-                                            className="mt-2 block w-full rounded-md border-gray-200 shadow-sm px-3 py-2 focus:outline-none focus:ring-none sm:text-sm" 
-                                            placeholder="Enter Description">
-                                        </textarea>
-                                    </div>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm font-medium text-gray-700">Invite People</span>
+                                                <InvitePeoplePopover
+                                                    onDone={handleDoneInviting}
+                                                    invitedPeople={invitedPeople}
+                                                >
+                                                    <button type="button" className="flex items-center justify-center gap-1.5 px-3 py-1.5 border border-[#697d67] text-[#697d67] bg-transparent rounded-full text-sm font-medium hover:bg-gray-50">
+                                                        <span>Add</span>
+                                                        <Plus size={16} />
+                                                    </button>
+                                                </InvitePeoplePopover>
+                                            </div>
 
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-gray-700">Invite People</span>
-                                            <InvitePeoplePopover 
-                                                onDone={handleDoneInviting}
-                                                invitedPeople={invitedPeople}
-                                            >
-                                                <button type="button" className="flex items-center justify-center gap-1.5 px-3 py-1.5 border border-[#697d67] text-[#697d67] bg-transparent rounded-full text-sm font-medium hover:bg-gray-50">
-                                                    <Plus size={16} />
-                                                    <span>Add</span>
-                                                </button>
-                                            </InvitePeoplePopover>
-                                        </div>
-                                        
-                                        {/* 2. Updated the display for invited people */}
-                                        {invitedPeople.length > 0 && (
-                                            <div className="pt-2 max-h-40 overflow-y-auto">
-                                                <ul className="space-y-2">
-                                                    {invitedPeople.map(person => (
-                                                        <li key={person.id} className="flex items-center justify-between py-1 pr-1">
-                                                            <div className="flex items-center gap-3">
-                                                                <Image src={person.avatar} alt={person.name} width={32} height={32} className="h-8 w-8 rounded-full" />
-                                                                <div>
-                                                                    <span className="text-sm font-medium text-gray-900">{person.name}</span>
-                                                                    <p className="text-xs text-gray-500">{person.role}</p>
+                                            {invitedPeople.length > 0 && (
+                                                <div className="pt-2 overflow-y-auto max-h-40">
+                                                    <ul className="space-y-2">
+                                                        {invitedPeople.map(person => (
+                                                            <li key={person.id} className="flex items-center justify-between py-1 pr-1">
+                                                                <div className="flex items-center gap-3">
+                                                                    <Image src={person.avatar} alt={person.name} width={32} height={32} className="w-8 h-8 rounded-full" />
+                                                                    <div>
+                                                                        <span className="text-sm font-medium text-gray-900">{person.name}</span>
+                                                                        <p className="text-xs text-gray-500">{person.role}</p>
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                            <button
-                                                                type="button"
-                                                                title={`Remove ${person.name}`}
-                                                                onClick={() => handleRemovePerson(person)}
-                                                                className="p-1 rounded-full text-gray-400 hover:bg-gray-100 focus:outline-none focus:ring-0"
-                                                            >
-                                                                <X size={30} />
-                                                            </button>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
+                                                                <button
+                                                                    type="button"
+                                                                    title={`Remove ${person.name}`}
+                                                                    onClick={() => handleRemovePerson(person)}
+                                                                    className="p-1 text-gray-400 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-0"
+                                                                >
+                                                                    <X size={30} />
+                                                                </button>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
 
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-gray-700">Links</span>
+                                            <LinkInputList />
+
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm font-medium text-gray-700">Files</span>
+                                                <button
+                                                    type="button"
+                                                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 border border-[#697d67] text-[#697d67] bg-transparent rounded-full text-sm font-medium hover:bg-gray-50 transition-colors"
+                                                >
+                                                    <span>Add</span>
+                                                    <Plus size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex w-full gap-4 pt-4 flex-shrink-0">
                                             <button
                                                 type="button"
-                                                className="flex items-center justify-center gap-1.5 px-3 py-1.5 border border-[#697d67] text-[#697d67] bg-transparent rounded-full text-sm font-medium hover:bg-gray-50 transition-colors"
+                                                onClick={onClose}
+                                                className="flex justify-center w-full px-10 py-3 text-sm font-medium text-[#697D67] bg-white border border-[#697D67] rounded-full hover:bg-gray-50 focus:outline-none transition-colors"
                                             >
-                                                <Plus size={16} />
-                                                <span>Add</span>
+                                                Cancel
                                             </button>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-gray-700">Files</span>
                                             <button
-                                                type="button"
-                                                className="flex items-center justify-center gap-1.5 px-3 py-1.5 border border-[#697d67] text-[#697d67] bg-transparent rounded-full text-sm font-medium hover:bg-gray-50 transition-colors"
+                                                type="submit"
+                                                className="flex justify-center w-full px-12 py-3 text-sm font-medium text-white bg-[#697d67] rounded-full hover:bg-[#556654] focus:outline-none transition-colors"
                                             >
-                                                <Plus size={16} />
-                                                <span>Add</span>
+                                                Save
                                             </button>
                                         </div>
-                                    </div>
-                                    
-                                    <div className="flex w-full gap-4 flex-shrink-0 pt-4">
-                                        <button 
-                                            type="button" 
-                                            onClick={onClose} 
-                                            className="flex w-full justify-center px-10 py-3 text-sm font-medium text-[#697D67] bg-white border border-[#697D67] rounded-full hover:bg-gray-50 focus:outline-none transition-colors"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button 
-                                            type="submit" 
-                                            className="flex w-full justify-center px-12 py-3 text-sm font-medium text-white bg-[#697d67] rounded-full hover:bg-[#556654] focus:outline-none transition-colors"
-                                        >
-                                            Save
-                                        </button>
-                                    </div>
-                                </form>
+                                    </form>
+                                </FormProvider>
                             </Dialog.Panel>
                         </Transition.Child>
                     </div>

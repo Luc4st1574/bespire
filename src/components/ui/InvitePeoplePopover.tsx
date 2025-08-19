@@ -146,8 +146,8 @@ export default function InvitePeoplePopover({ children, onDone, invitedPeople }:
                                 </ul>
                             </div>
 
-                            <div className="p-4 border-t border-gray-100 mt-auto">
-                                <button type="button" onClick={() => handleDone(close)} className="w-full justify-center rounded-md bg-[#697d67] px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#556654] focus-visible:outline-none">
+                            <div className="p-4 border-t border-gray-100 mt-auto rounded-full">
+                                <button type="button" onClick={() => handleDone(close)} className="w-full justify-center rounded-full bg-[#697d67] px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#556654] focus-visible:outline-none">
                                     Done
                                 </button>
                             </div>
