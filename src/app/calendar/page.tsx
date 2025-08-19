@@ -69,6 +69,15 @@ export default function CalendarPage() {
         ), { duration: 6000 });
     };
 
+    const handleUpdateEvent = (updatedEvent: Event) => {
+        setEvents(prevEvents => 
+            prevEvents.map(event => 
+                event.id === updatedEvent.id ? updatedEvent : event
+            )
+        );
+        showSuccessToast("Event updated successfully!");
+    };
+
     const handleDeleteEvent = (eventId: string) => {
         setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
         showSuccessToast("Event deleted!");
@@ -90,11 +99,7 @@ export default function CalendarPage() {
     const handleFilterToggle = (eventType: string) => {
         if (eventType === 'All') {
             const allTypes = uniqueCategories.map(cat => cat.type);
-            if (activeFilters.length === allTypes.length) {
-                setActiveFilters([]);
-            } else {
-                setActiveFilters(allTypes);
-            }
+            setActiveFilters(prev => prev.length === allTypes.length ? [] : allTypes);
         } else {
             setActiveFilters(prev =>
                 prev.includes(eventType)
@@ -150,6 +155,8 @@ export default function CalendarPage() {
                 event={selectedEvent}
                 onArchiveEvent={handleArchiveEvent}
                 onDeleteEvent={handleDeleteEvent}
+                onUpdateEvent={handleUpdateEvent}
+                eventCategories={uniqueCategories}
             />
         </DashboardLayout>
     );

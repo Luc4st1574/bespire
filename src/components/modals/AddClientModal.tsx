@@ -839,6 +839,7 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
               onClick={onClose}
               type="button"
               className="text-gray-600 hover:text-black"
+              title="Close"
             >
               <X className="w-5 h-5" />
             </button>
