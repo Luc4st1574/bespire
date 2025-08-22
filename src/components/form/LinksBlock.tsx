@@ -1,113 +1,111 @@
-// src/components/form/LinksBlock.tsx
 import { fetchLinkMetadata } from "@/utils/fetchLinkMetadata";
 import { useState } from "react";
 import LinkCardList from "../for_mocks/LinkCardList";
 import { useLinks } from "@/hooks/useLinks";
-import { Link } from "@/types/links";
-import { Plus } from "lucide-react";
-
-interface LinksBlockProps {
-  linkedToId: string;
-  linkedToType?: "request" | "project" | "task";
-  onChange?: (links: Link[]) => void;
-  disabled?: boolean;
-}
 
 export default function LinksBlock({
   linkedToId,
   linkedToType = "request",
+  onChange,
   disabled = false,
-}: LinksBlockProps) {
+}: {
+  linkedToId: string;
+  linkedToType?: string;
+  onChange?: (links: any[]) => void;
+  disabled?: boolean;
+}) {
   const { links, loading, addLink, removeLink } = useLinks({ linkedToId, linkedToType });
-  const [isAdding, setIsAdding] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [inputError, setInputError] = useState("");
-  const [isMetaLoading, setIsMetaLoading] = useState(false);
+  const [metaLoading, setMetaLoading] = useState(false);
 
+  // Add new link (with metadata)
   const handleAddLink = async () => {
     setInputError("");
-    if (!inputValue.trim()) {
-      setInputError("Please enter a URL.");
-      return;
-    }
-
-    let url = inputValue.trim();
-    if (!/^https?:\/\//.test(url)) {
-      url = "https://" + url;
-    }
-
-    setIsMetaLoading(true);
+    setMetaLoading(true);
     try {
+      // Validar URL básica
+      if (!inputValue.trim()) {
+        setInputError("Enter a URL");
+        setMetaLoading(false);
+        return;
+      }
+      let url = inputValue.trim();
+      if (!/^https?:\/\//.test(url)) url = "https://" + url;
       const meta = await fetchLinkMetadata(url);
       await addLink({
         url,
         title: meta?.title || url.replace(/^https?:\/\//, ""),
-        favicon: meta?.favicon || "",
+        favicon: meta?.favicon?.url || "",
         linkedToId,
         linkedToType,
       });
-      setIsAdding(false);
+      setAdding(false);
       setInputValue("");
-    } catch {
-      setInputError("Could not fetch metadata or save the link. Please try again.");
+      setInputError("");
+    } catch (e) {
+      setInputError("Could not fetch metadata or save link.");
     } finally {
-      setIsMetaLoading(false);
+      setMetaLoading(false);
     }
   };
 
-  const handleRemove = (idx: number) => {
+  // Remove link
+  const handleRemove = async (idx: number) => {
     const link = links[idx];
-    if (link) {
-      removeLink(link.id);
-    }
+    if (!link) return;
+    await removeLink(link.id);
   };
 
   return (
     <section className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <label className="text-base font-medium text-[#5E6B66]">Links</label>
-        {!isAdding && !disabled && (
+        <label className="font-medium text-base text-[#5E6B66]">Links</label>
+        {!adding && !disabled ? (
           <button
             type="button"
-            title="Add a new link"
-            className="flex items-center justify-center gap-1.5 px-3 py-1.5 border border-[#697d67] text-[#697d67] bg-transparent rounded-full text-sm font-medium hover:bg-gray-50 transition-colors"
-            onClick={() => setIsAdding(true)}
+            className="text-xs text-[#758C5D] mt-1 px-2 py-1 rounded border border-[#758C5D] hover:bg-[#F1F3EE]"
+            onClick={() => setAdding(true)}
           >
-            <Plus size={16} />
-            <span>Add</span>
+            Add +
           </button>
-        )}
+        ) : !disabled ? (
+          <div className="flex items-center gap-1">
+            <input
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              className="border px-2 py-1 rounded text-sm outline-none focus:border-[#758C5D] w-64"
+              placeholder="Paste link..."
+              autoFocus
+              disabled={metaLoading}
+              onKeyDown={e => {
+                if (e.key === "Enter") handleAddLink();
+                if (e.key === "Escape") setAdding(false);
+              }}
+            />
+            <button
+              type="button"
+              className="text-xs bg-[#758C5D] text-white rounded px-3 py-1"
+              onClick={handleAddLink}
+              disabled={metaLoading}
+            >
+              {metaLoading ? "..." : "Save"}
+            </button>
+            <button
+              type="button"
+              className="text-xs text-gray-600 ml-1"
+              onClick={() => setAdding(false)}
+              disabled={metaLoading}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : null}
       </div>
-
-      {isAdding && !disabled && (
-        <div className="flex items-center gap-1">
-          <input
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            className="w-64 px-2 py-1 text-sm border rounded outline-none focus:border-[#758C5D]"
-            placeholder="Paste a link..."
-            title="Paste a link here"
-            autoFocus
-            disabled={isMetaLoading}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleAddLink();
-              if (e.key === "Escape") setIsAdding(false);
-            }}
-          />
-          <button type="button" className="px-3 py-1 text-xs text-white bg-[#758C5D] rounded" title="Save this link" onClick={handleAddLink} disabled={isMetaLoading}>
-            {isMetaLoading ? "..." : "Save"}
-          </button>
-          <button type="button" className="ml-1 text-xs text-gray-600" title="Cancel adding a link" onClick={() => setIsAdding(false)} disabled={isMetaLoading}>
-            Cancel
-          </button>
-        </div>
-      )}
-
       {inputError && <div className="text-xs text-red-500">{inputError}</div>}
-      
       <LinkCardList links={links} onRemove={handleRemove} />
-      
-      {loading && <div className="mt-2 text-xs text-gray-400">Loading links...</div>}
+      {loading && <div className="text-xs text-gray-400 mt-2">Cargando links...</div>}
     </section>
   );
 }

@@ -9,7 +9,7 @@ import { Plus, Download, MoreHorizontal, Share2, Trash2, X } from 'lucide-react'
 import { getFileIcon } from "@/utils/getFileIcon";
 import Cloud from '@/assets/icons/cloud_check.svg';
 import InvitePeoplePopover, { Person } from '@/components/ui/InvitePeoplePopover';
-import { LinkInputList } from '@/components/form/LinkInputList';
+import { LinkInputList } from './LinksAttached';
 
 // Types are defined here for simplicity
 export interface UploadingFile {
