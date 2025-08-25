@@ -51,6 +51,9 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
     const [invitedPeople, setInvitedPeople] = useState<Person[]>([]);
     const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
     
+    // ADDED: State for the recurring option dropdown
+    const [recurringOption, setRecurringOption] = useState('');
+
     const methods = useForm<AddEventFormData>();
 
     useEffect(() => {
@@ -71,6 +74,9 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
             setAssignedTo('Bespire Team');
             setAssignee('Mariel Garcia');
             methods.reset();
+            
+            // ADDED: Reset the recurring option when the modal opens
+            setRecurringOption('');
         }
     }, [isOpen, initialDate, methods]);
     
@@ -110,7 +116,6 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
             date: '', // date will be set below
         };
 
-        // Handle recurring vs single events
         if (isRecurring) {
             const selectedDate = new Date(date + 'T00:00:00');
             const dayOfWeek = selectedDate.getDay();
@@ -168,11 +173,13 @@ export default function AddEventModal({ isOpen, onClose, onAddEvent, eventCatego
 
                                         {error && <p className="text-sm text-red-600 -my-2">{error}</p>}
                                         
+                                        {/* ADDED: Pass the new props down to the child component */}
                                         <SchedulingOptions
                                             date={date} setDate={setDate}
                                             startTime={startTime} setStartTime={setStartTime}
                                             endTime={endTime} setEndTime={setEndTime}
                                             isRecurring={isRecurring} setIsRecurring={setIsRecurring}
+                                            recurringOption={recurringOption} setRecurringOption={setRecurringOption}
                                             isAllDay={isAllDay} setIsAllDay={setIsAllDay}
                                             notifyOption={notifyOption} setNotifyOption={setNotifyOption}
                                             visibilityOption={visibilityOption} setVisibilityOption={setVisibilityOption}
