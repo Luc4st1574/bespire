@@ -1,10 +1,9 @@
 "use client";
 
-import React, { Fragment, useState } from 'react';
+import React, { Fragment } from 'react';
 import { Popover, Transition } from '@headlessui/react';
 import { X, ChevronRight } from 'lucide-react'; // Added ChevronRight
 import { Event } from '@/components/calendar/CalendarMain';
-import EventDetailModal from '../modals/EventDetailModal';
 
 interface CalendarPopoverProps {
     events: Event[];
@@ -24,7 +23,7 @@ const formatDate = (dateString: string) => {
 };
 
 export default function CalendarPopover({ events, date, children, columnIndex }: CalendarPopoverProps) {
-    const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+    // Removed unused selectedEvent state
 
     const getPanelPositionClass = () => {
         if (columnIndex > 4) {
@@ -74,7 +73,6 @@ export default function CalendarPopover({ events, date, children, columnIndex }:
                                         <button
                                             key={eventIndex}
                                             onClick={() => {
-                                                setSelectedEvent(event);
                                                 close();
                                             }}
                                             className={`group flex w-full items-center justify-between p-2 rounded-lg text-sm text-left transition-all ${event.bgColor} hover:brightness-95`}
@@ -102,12 +100,6 @@ export default function CalendarPopover({ events, date, children, columnIndex }:
                     </Popover.Panel>
                 </Transition>
             </Popover>
-            
-            <EventDetailModal
-                isOpen={!!selectedEvent}
-                onClose={() => setSelectedEvent(null)}
-                event={selectedEvent}
-            />
         </>
     );
 }
