@@ -1,21 +1,22 @@
 "use client";
 
-import React from 'react'; // Import React if not already present
+import React from 'react';
 import { ChevronLeft, ChevronRight, Plus, ListFilter } from 'lucide-react';
-import { EventCategory } from '@/app/calendar/page';
 import FilterPopover from '../ui/FilterPopover';
+import { EventType } from '@/types/calendar';
+import { usePermission } from '@/hooks/usePermission';
+import { PERMISSIONS } from '@/constants/permissions';
 
-// --- MODIFICATION 1: Add the 'onAddEvent' prop to the interface ---
 interface CalendarHeaderProps {
     currentDate: Date;
     onPrevMonth: () => void;
     onNextMonth: () => void;
     onGoToToday: () => void;
-    eventCategories: EventCategory[];
+    eventCategories: EventType[];
     activeFilters: string[];
     onFilterToggle: (category: string) => void;
     onSeeAllEvents: () => void;
-    onAddEvent: () => void; // <-- Prop added here
+    onAddEvent: () => void;
 }
 
 const darkGreen = "#697d67";
@@ -29,8 +30,10 @@ export default function CalendarHeader({
     activeFilters,
     onFilterToggle,
     onSeeAllEvents,
-    onAddEvent, // <-- Receive the prop here
+    onAddEvent,
 }: CalendarHeaderProps) {
+    const canCreateEvents = usePermission(PERMISSIONS.CREATE_CALENDAR_EVENTS);
+
     return (
         <div className="flex items-center justify-between -mt-4">
             <div className="flex items-center gap-2">
@@ -80,13 +83,15 @@ export default function CalendarHeader({
                 >
                     See all events
                 </button>
-                <button 
-                    onClick={onAddEvent} 
-                    className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[${darkGreen}] rounded-full hover:bg-[#556654]`}
-                >
-                    <span>Add</span>
-                    <Plus size={16} />
-                </button>
+                {canCreateEvents && (
+                    <button 
+                        onClick={onAddEvent} 
+                        className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[${darkGreen}] rounded-full hover:bg-[#556654]`}
+                    >
+                        <span>Add</span>
+                        <Plus size={16} />
+                    </button>
+                )}
             </div>
         </div>
     );

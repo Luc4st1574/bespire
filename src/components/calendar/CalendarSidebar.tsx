@@ -3,33 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, ChevronDown, Search, Check, Minus } from 'lucide-react';
 import { generateCalendarDays, toISODateString } from '@/utils/getDates';
-
-// --- Data ---
-const currentUser = { id: 2, name: 'Ila Hart' };
-
-const fullTeamMembers = [
-    { id: 2, name: 'Ila Hart' },
-    { id: 3, name: 'Noah Sinclair' },
-    { id: 4, name: 'Owen Pierce' },
-    { id: 5, name: 'Liam Thompson' },
-    { id: 6, name: 'Mason King' },
-    { id: 7, name: 'Logan Ward' },
-    { id: 8, name: 'Ethan Brooks' }
-];
-const initialVisibleTeamCount = 4;
-
-// NEW: Client data based on the image
-const fullClients = [
-    { id: 101, name: 'Scherule Inc.' },
-    { id: 102, name: 'EcoWave Solutions' },
-    { id: 103, name: 'Quantum Leap Technologies' },
-    { id: 104, name: 'Skyward Ventures' },
-    { id: 105, name: 'BrightFuture Labs' },
-    { id: 106, name: 'Innovate LLC' },
-    { id: 107, name: 'NextGen Systems' }
-];
-const initialVisibleClientCount = 5;
-
+import { useCalendar } from '@/hooks/useCalendar';
+import { useAuth } from '@/hooks/useAuth';
+import { TeamMember, Company } from '@/types/calendar';
 
 type SidebarCalendarProps = {
     selectedDate: Date;
@@ -37,60 +13,65 @@ type SidebarCalendarProps = {
 };
 
 export default function SidebarCalendar({ selectedDate, onDateSelect }: SidebarCalendarProps) {
+    const { user } = useAuth();
+    const { teamMembers, companies } = useCalendar();
     const [displayDate, setDisplayDate] = useState(selectedDate);
 
     // --- State for Team Listbox ---
     const [isTeamOpen, setIsTeamOpen] = useState(false);
-    const [checkedItems, setCheckedItems] = useState<{ [key: number]: boolean }>({ [currentUser.id]: true });
-    const [visibleTeamCount, setVisibleTeamCount] = useState(initialVisibleTeamCount);
+    const [checkedItems, setCheckedItems] = useState<{ [key: string]: boolean }>({ [user?._id || '']: true });
+    const [visibleTeamCount, setVisibleTeamCount] = useState(4);
     const [teamSearchQuery, setTeamSearchQuery] = useState('');
 
     // --- State for Client Listbox ---
     const [isClientOpen, setIsClientOpen] = useState(false);
-    const [checkedClients, setCheckedClients] = useState<{ [key: number]: boolean }>({});
-    const [visibleClientCount, setVisibleClientCount] = useState(initialVisibleClientCount);
+    const [checkedClients, setCheckedClients] = useState<{ [key: string]: boolean }>({});
+    const [visibleClientCount, setVisibleClientCount] = useState(5);
     const [clientSearchQuery, setClientSearchQuery] = useState('');
 
     // --- Logic for Team Checkboxes ---
-    const checkedTeamCount = Object.values(checkedItems).filter(isChecked => isChecked).length;
-    const isAllTeamsChecked = fullTeamMembers.length > 0 && checkedTeamCount === fullTeamMembers.length;
+    const checkedTeamCount = Object.values(checkedItems).filter(Boolean).length;
+    const isAllTeamsChecked = teamMembers.length > 0 && checkedTeamCount === teamMembers.length;
     const isTeamIndeterminate = checkedTeamCount > 0 && !isAllTeamsChecked;
-    const filteredTeamMembers = fullTeamMembers.filter(member => member.name.toLowerCase().includes(teamSearchQuery.toLowerCase()));
+    const filteredTeamMembers = teamMembers.filter((member: TeamMember) => 
+        `${member.firstName} ${member.lastName}`.toLowerCase().includes(teamSearchQuery.toLowerCase())
+    );
 
     // --- Logic for Client Checkboxes ---
-    const checkedClientCount = Object.values(checkedClients).filter(isChecked => isChecked).length;
-    const isAllClientsChecked = fullClients.length > 0 && checkedClientCount === fullClients.length;
+    const checkedClientCount = Object.values(checkedClients).filter(Boolean).length;
+    const isAllClientsChecked = companies.length > 0 && checkedClientCount === companies.length;
     const isClientsIndeterminate = checkedClientCount > 0 && !isAllClientsChecked;
-    const filteredClients = fullClients.filter(client => client.name.toLowerCase().includes(clientSearchQuery.toLowerCase()));
+    const filteredClients = companies.filter((client: Company) => 
+        client.name.toLowerCase().includes(clientSearchQuery.toLowerCase())
+    );
 
     // --- Handlers for Client Listbox ---
     const handleAllClientsChange = () => {
-        const newCheckedState: { [key: number]: boolean } = {};
+        const newCheckedState: { [key: string]: boolean } = {};
         if (!isAllClientsChecked) {
-            fullClients.forEach(client => { newCheckedState[client.id] = true; });
+            companies.forEach((client: Company) => { newCheckedState[client._id] = true; });
         }
         setCheckedClients(newCheckedState);
     };
-    const handleClientCheckboxChange = (clientId: number) => {
+    const handleClientCheckboxChange = (clientId: string) => {
         setCheckedClients(prev => ({ ...prev, [clientId]: !prev[clientId] }));
     };
     const handleSeeMoreClients = () => setVisibleClientCount(filteredClients.length);
-    const handleSeeLessClients = () => setVisibleClientCount(initialVisibleClientCount);
+    const handleSeeLessClients = () => setVisibleClientCount(5);
     
-    // (Existing handlers for teams would be here)
+    // --- Handlers for Team Listbox ---
     const handleAllTeamsChangeImpl = () => {
-        const newCheckedState: { [key: number]: boolean } = {};
+        const newCheckedState: { [key: string]: boolean } = {};
         if (!isAllTeamsChecked) {
-            fullTeamMembers.forEach(member => { newCheckedState[member.id] = true; });
+            teamMembers.forEach((member: TeamMember) => { newCheckedState[member._id] = true; });
         }
         setCheckedItems(newCheckedState);
     };
-    const handleTeamCheckboxChangeImpl = (memberId: number) => {
+    const handleTeamCheckboxChangeImpl = (memberId: string) => {
         setCheckedItems(prev => ({ ...prev, [memberId]: !prev[memberId] }));
     };
     const handleSeeMoreTeams = () => setVisibleTeamCount(filteredTeamMembers.length);
-    const handleSeeLessTeams = () => setVisibleTeamCount(initialVisibleTeamCount);
-
+    const handleSeeLessTeams = () => setVisibleTeamCount(4);
 
     // --- useEffect Hooks ---
     useEffect(() => {
@@ -100,7 +81,7 @@ export default function SidebarCalendar({ selectedDate, onDateSelect }: SidebarC
     useEffect(() => {
         if (!isTeamOpen) {
             const timer = setTimeout(() => {
-                setVisibleTeamCount(initialVisibleTeamCount);
+                setVisibleTeamCount(4);
                 setTeamSearchQuery('');
             }, 300);
             return () => clearTimeout(timer);
@@ -110,13 +91,12 @@ export default function SidebarCalendar({ selectedDate, onDateSelect }: SidebarC
     useEffect(() => {
         if (!isClientOpen) {
             const timer = setTimeout(() => {
-                setVisibleClientCount(initialVisibleClientCount);
+                setVisibleClientCount(5);
                 setClientSearchQuery('');
             }, 300);
             return () => clearTimeout(timer);
         }
     }, [isClientOpen]);
-
 
     // --- Render Logic ---
     const selectedDateString = toISODateString(selectedDate);
@@ -128,7 +108,7 @@ export default function SidebarCalendar({ selectedDate, onDateSelect }: SidebarC
 
     return (
         <div className="w-64 p-2">
-            {/* Calendar Header and Grid (Omitted for brevity) */}
+            {/* Calendar Header and Grid */}
             <div className="flex items-center justify-between mb-4 bg-[#f3fee7] rounded-lg p-2">
                 <button title="Previous month" onClick={handlePrevMonth} className="p-1 rounded-full hover:bg-[#e1f0cc]"><ChevronLeft size={20} style={{ color: customGreen }} /></button>
                 <h3 className="font-semibold" style={{ color: customGreen }}>{displayDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
@@ -146,7 +126,7 @@ export default function SidebarCalendar({ selectedDate, onDateSelect }: SidebarC
                     </button>
                     {isTeamOpen && (
                         <div className="px-3 pb-3">
-                             <div className="relative mb-3">
+                            <div className="relative mb-3">
                                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><Search size={20} className="text-gray-400" /></div>
                                 <input type="text" placeholder="Search a team" value={teamSearchQuery} onChange={(e) => setTeamSearchQuery(e.target.value)} className="w-full pl-4 pr-10 py-2 text-sm text-gray-700 bg-gray-100 border-0 rounded-full focus:ring-2 focus:ring-gray-300 focus:outline-none placeholder-gray-500" />
                             </div>
@@ -159,18 +139,18 @@ export default function SidebarCalendar({ selectedDate, onDateSelect }: SidebarC
                                     </div>
                                     <span className="text-sm text-gray-800 font-light">All</span>
                                 </label>
-                                {filteredTeamMembers.slice(0, visibleTeamCount).map(member => (
-                                    <label key={member.id} className="flex items-center space-x-3 cursor-pointer">
-                                        <input type="checkbox" checked={!!checkedItems[member.id]} onChange={() => handleTeamCheckboxChangeImpl(member.id)} className="hidden" />
-                                        <div className={`w-5 h-5 border-2 rounded-md flex items-center justify-center transition-colors ${checkedItems[member.id] ? 'bg-[#697d67] border-[#697d67]' : 'border-gray-300'}`}>
-                                            {checkedItems[member.id] && <Check size={14} className="text-white" />}
+                                {filteredTeamMembers.slice(0, visibleTeamCount).map((member: TeamMember) => (
+                                    <label key={member._id} className="flex items-center space-x-3 cursor-pointer">
+                                        <input type="checkbox" checked={!!checkedItems[member._id]} onChange={() => handleTeamCheckboxChangeImpl(member._id)} className="hidden" />
+                                        <div className={`w-5 h-5 border-2 rounded-md flex items-center justify-center transition-colors ${checkedItems[member._id] ? 'bg-[#697d67] border-[#697d67]' : 'border-gray-300'}`}>
+                                            {checkedItems[member._id] && <Check size={14} className="text-white" />}
                                         </div>
-                                        <span className="text-sm text-gray-800">{member.name}</span>
-                                        {member.id === currentUser.id && (<span className="text-sm text-gray-500">(You)</span>)}
+                                        <span className="text-sm text-gray-800">{member.firstName} {member.lastName}</span>
+                                        {member._id === user?._id && (<span className="text-sm text-gray-500">(You)</span>)}
                                     </label>
                                 ))}
                             </div>
-                            {filteredTeamMembers.length > initialVisibleTeamCount && ( visibleTeamCount < filteredTeamMembers.length ? (<button onClick={handleSeeMoreTeams} className="mt-3 text-sm font-semibold flex items-center text-black"><span className="text-2xl mr-1 font-light">+</span> See more</button>) : (<button onClick={handleSeeLessTeams} className="mt-3 text-sm font-semibold flex items-center text-black"><span className="text-2xl mr-1 font-light">−</span> See less</button>))}
+                            {filteredTeamMembers.length > 4 && ( visibleTeamCount < filteredTeamMembers.length ? (<button onClick={handleSeeMoreTeams} className="mt-3 text-sm font-semibold flex items-center text-black"><span className="text-2xl mr-1 font-light">+</span> See more</button>) : (<button onClick={handleSeeLessTeams} className="mt-3 text-sm font-semibold flex items-center text-black"><span className="text-2xl mr-1 font-light">−</span> See less</button>))}
                         </div>
                     )}
                 </div>
@@ -196,17 +176,17 @@ export default function SidebarCalendar({ selectedDate, onDateSelect }: SidebarC
                                     </div>
                                     <span className="text-sm text-gray-800 font-light">All</span>
                                 </label>
-                                {filteredClients.slice(0, visibleClientCount).map(client => (
-                                    <label key={client.id} className="flex items-center space-x-3 cursor-pointer">
-                                        <input type="checkbox" checked={!!checkedClients[client.id]} onChange={() => handleClientCheckboxChange(client.id)} className="hidden" />
-                                        <div className={`w-5 h-5 border-2 rounded-md flex items-center justify-center transition-colors ${checkedClients[client.id] ? 'bg-[#697d67] border-[#697d67]' : 'border-gray-300'}`}>
-                                            {checkedClients[client.id] && <Check size={14} className="text-white" />}
+                                {filteredClients.slice(0, visibleClientCount).map((client: Company) => (
+                                    <label key={client._id} className="flex items-center space-x-3 cursor-pointer">
+                                        <input type="checkbox" checked={!!checkedClients[client._id]} onChange={() => handleClientCheckboxChange(client._id)} className="hidden" />
+                                        <div className={`w-5 h-5 border-2 rounded-md flex items-center justify-center transition-colors ${checkedClients[client._id] ? 'bg-[#697d67] border-[#697d67]' : 'border-gray-300'}`}>
+                                            {checkedClients[client._id] && <Check size={14} className="text-white" />}
                                         </div>
                                         <span className="text-sm text-gray-800">{client.name}</span>
                                     </label>
                                 ))}
                             </div>
-                            {filteredClients.length > initialVisibleClientCount && (visibleClientCount < filteredClients.length ? (<button onClick={handleSeeMoreClients} className="mt-3 text-sm font-semibold flex items-center text-black"><span className="text-2xl mr-1 font-light">+</span> See more</button>) : (<button onClick={handleSeeLessClients} className="mt-3 text-sm font-semibold flex items-center text-black"><span className="text-2xl mr-1 font-light">−</span> See less</button>))}
+                            {filteredClients.length > 5 && (visibleClientCount < filteredClients.length ? (<button onClick={handleSeeMoreClients} className="mt-3 text-sm font-semibold flex items-center text-black"><span className="text-2xl mr-1 font-light">+</span> See more</button>) : (<button onClick={handleSeeLessClients} className="mt-3 text-sm font-semibold flex items-center text-black"><span className="text-2xl mr-1 font-light">−</span> See less</button>))}
                         </div>
                     )}
                 </div>

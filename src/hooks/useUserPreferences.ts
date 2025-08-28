@@ -1,4 +1,3 @@
-import { useAuth } from "./useAuth";
 import { useMutation } from "@apollo/client";
 import { UPDATE_USER_PREFERENCES } from "@/graphql/mutations/user/updateUserPreferences";
 import { useState, useEffect } from "react";

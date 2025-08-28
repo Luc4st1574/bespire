@@ -5,21 +5,7 @@ import { generateCalendarDays } from '@/utils/getDates';
 import CalendarHeader from './CalendarHeader';
 import SidebarCalendar from './CalendarSidebar';
 import CalendarGrid from './CalendarGrid';
-import { EventCategory } from '@/app/calendar/page'; 
-
-// --- MODIFICATION START ---
-// Add 'id' to the Event interface.
-export interface Event {
-    id: string; // A unique identifier is crucial for managing items in a list
-    date: string;
-    title: string;
-    type: string;
-    bgColor: string;
-    rectColor: string;
-    startTime?: string;
-    endTime?: string;
-}
-// --- MODIFICATION END ---
+import { EventType, CalendarEvent as Event } from '@/types/calendar';
 
 interface CalendarMainProps {
     events: Event[];
@@ -28,11 +14,11 @@ interface CalendarMainProps {
     onNextMonth: () => void;
     onDateChange: (date: Date) => void;
     onGoToToday: () => void;
-    eventCategories: EventCategory[];
+    eventCategories: EventType[];
     activeFilters: string[];
     onFilterToggle: (category: string) => void;
     onSeeAllEvents: () => void;
-    onAddEvent: () => void; // <-- Add prop to trigger the add modal
+    onAddEvent: () => void;
 }
 
 export default function CalendarMain({
@@ -46,7 +32,7 @@ export default function CalendarMain({
     activeFilters,
     onFilterToggle,
     onSeeAllEvents,
-    onAddEvent, // <-- Receive new prop
+    onAddEvent,
 }: CalendarMainProps) {
 
     const calendarDays = useMemo(() => generateCalendarDays(currentDate), [currentDate]);

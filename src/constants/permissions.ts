@@ -105,6 +105,13 @@ export const PERMISSIONS = {
   EDIT_ANALYTICS: 'edit_analytics',
   DELETE_ANALYTICS: 'delete_analytics',
 
+    //calendar
+    MANAGE_CALENDAR: 'manage_calendar',
+    CREATE_CALENDAR_EVENTS: 'create_calendar_events',
+    VIEW_CALENDAR_EVENTS: 'view_calendar_events',
+    EDIT_CALENDAR_EVENTS: 'edit_calendar_events',
+    DELETE_CALENDAR_EVENTS: 'delete_calendar_events',
+
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

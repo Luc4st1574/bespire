@@ -2,8 +2,8 @@
 
 import React, { Fragment } from 'react';
 import { Popover, Transition } from '@headlessui/react';
-import { X, ChevronRight } from 'lucide-react'; // Added ChevronRight
-import { Event } from '@/components/calendar/CalendarMain';
+import { X, ChevronRight } from 'lucide-react';
+import { CalendarEvent as Event } from '@/types/calendar';
 
 interface CalendarPopoverProps {
     events: Event[];
@@ -23,7 +23,6 @@ const formatDate = (dateString: string) => {
 };
 
 export default function CalendarPopover({ events, date, children, columnIndex }: CalendarPopoverProps) {
-    // Removed unused selectedEvent state
 
     const getPanelPositionClass = () => {
         if (columnIndex > 4) {
@@ -73,17 +72,19 @@ export default function CalendarPopover({ events, date, children, columnIndex }:
                                         <button
                                             key={eventIndex}
                                             onClick={() => {
+                                                // TODO: This will open the EventDetailModal
                                                 close();
                                             }}
-                                            className={`group flex w-full items-center justify-between p-2 rounded-lg text-sm text-left transition-all ${event.bgColor} hover:brightness-95`}
+                                            className={`group flex w-full items-center justify-between p-2 rounded-lg text-sm text-left transition-all`}
+                                            style={{ backgroundColor: event.eventType.backgroundColor }}
                                         >
                                             <div className="flex items-center gap-2 overflow-hidden">
-                                                <div className={`w-1.5 h-auto self-stretch rounded-full ${event.rectColor}`}></div>
+                                                <div style={{ backgroundColor: event.eventType.borderColor }} className={`w-1.5 h-auto self-stretch rounded-full`}></div>
                                                 <div className="flex-1">
                                                     <p className="text-black font-medium truncate">{event.title}</p>
-                                                    {event.startTime && event.endTime && (
+                                                    {event.start && event.end && (
                                                         <p className="text-xs text-gray-600 mt-0.5">
-                                                            {event.startTime} - {event.endTime}
+                                                            {new Date(event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(event.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                         </p>
                                                     )}
                                                 </div>

@@ -1,11 +1,9 @@
 import {
   createContext,
   useContext,
-  useState,
-  useEffect,
   ReactNode,
 } from "react";
-import { useQuery } from "@apollo/client";
+import { useQuery, ApolloQueryResult } from "@apollo/client";
 import { GET_WORKSPACE_BASIS_BY_ID } from "../graphql/queries/workspace/getWorkspaceBasisById";
 import { User } from "../types/users";
 
@@ -25,11 +23,14 @@ type Workspace = {
   planCancelPending?: boolean;
   planEndsAt?: string;
 };
+interface GetWorkspaceData {
+  getWorkspaceBasisById: Workspace;
+}
 
 type WorkspaceContextType = {
   workspace: Workspace | null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  refetchWorkspace: () => Promise<any>;
+  workspaceId: string;
+  refetchWorkspace: () => Promise<ApolloQueryResult<GetWorkspaceData>>;
   loading: boolean;
 };
 
@@ -45,7 +46,7 @@ export function WorkspaceProvider({
   workspaceId: string;
 }) {
   console.log("WorkspaceProvider workspaceId", workspaceId)
-  const { data, loading, refetch } = useQuery(GET_WORKSPACE_BASIS_BY_ID, {
+  const { data, loading, refetch } = useQuery<GetWorkspaceData>(GET_WORKSPACE_BASIS_BY_ID, {
     variables: { workspaceId },
     skip: !workspaceId,
   });
@@ -56,6 +57,7 @@ export function WorkspaceProvider({
     <WorkspaceContext.Provider
       value={{
         workspace: data?.getWorkspaceBasisById ?? null,
+        workspaceId: workspaceId,
         refetchWorkspace: refetch,
         loading,
       }}

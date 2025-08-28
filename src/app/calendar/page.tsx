@@ -1,62 +1,77 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import DashboardLayout from "../dashboard/layout/DashboardLayout";
 import CalendarMain from '@/components/calendar/CalendarMain';
-import { Event } from '@/components/calendar/CalendarMain';
 import EventViewModal from '@/components/modals/EventViewModal';
 import AddEventModal from '@/components/modals/AddEventModal';
 import EventCreatedToast from '@/components/ui/EventCreatedToast';
 import EventDetailModal from '@/components/modals/EventDetailModal';
-import initialEventsData from '@/data/events.json';
 import { showSuccessToast } from "@/components/ui/toast";
+import { useCalendar } from '@/hooks/useCalendar';
+import PermissionGuard from '@/guards/PermissionGuard';
+import { PERMISSIONS } from '@/constants/permissions';
+import { CalendarEvent as Event, EventType } from '@/types/calendar';
 
-const getInitialEvents = (): Event[] => {
-    return initialEventsData.map(event => ({
-        ...event,
-        id: crypto.randomUUID(),
-    }));
-};
+function CalendarView() {
+    const {
+        events,
+        eventTypes,
+        loading,
+        setDateRange,
+    } = useCalendar();
 
-export interface EventCategory {
-    type: string;
-    bgColor: string;
-    rectColor: string;
-}
-
-export default function CalendarPage() {
-    const [events, setEvents] = useState<Event[]>(getInitialEvents);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [isEventViewModalOpen, setIsEventViewModalOpen] = useState(false);
     const [isAddEventModalOpen, setIsAddEventModalOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [activeFilters, setActiveFilters] = useState<string[]>([]);
+    
+    // This state is kept for the untouched modal logic for now
+    const [mockEvents, setMockEvents] = useState<Event[]>([]); 
 
-    const uniqueCategories = useMemo((): EventCategory[] => {
-        const categories = new Map<string, EventCategory>();
-        initialEventsData.forEach(event => {
-            if (!categories.has(event.type)) {
-                categories.set(event.type, {
-                    type: event.type,
-                    bgColor: event.bgColor,
-                    rectColor: event.rectColor,
-                });
-            }
-        });
-        return Array.from(categories.values());
-    }, []);
+    useEffect(() => {
+        if (eventTypes.length > 0 && activeFilters.length === 0) {
+            setActiveFilters(eventTypes.map((cat: EventType) => cat.name));
+        }
+    }, [eventTypes, activeFilters]);
 
-    const [activeFilters, setActiveFilters] = useState<string[]>(() =>
-        uniqueCategories.map(cat => cat.type)
-    );
+    const handleDateChange = (newDate: Date) => {
+        const date = new Date(newDate);
+        date.setHours(12, 0, 0, 0);
+        setCurrentDate(date);
+        const start = new Date(date.getFullYear(), date.getMonth(), 1);
+        const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+        setDateRange({ start, end });
+    };
 
+    const handleFilterToggle = (eventTypeName: string) => {
+        if (eventTypeName === 'All') {
+            const allTypes = eventTypes.map((cat: EventType) => cat.name);
+            setActiveFilters(prev => prev.length === allTypes.length ? [] : allTypes);
+        } else {
+            setActiveFilters(prev =>
+                prev.includes(eventTypeName)
+                    ? prev.filter(type => type !== eventTypeName)
+                    : [...prev, eventTypeName]
+            );
+        }
+    };
+    
+    const filteredEvents = useMemo(() => {
+        if (activeFilters.length === 0) return [];
+        return events.filter((event: Event) => activeFilters.includes(event.eventType.name));
+    }, [activeFilters, events]);
+
+    // TODO: Connect the following handlers to the backend using the useCalendar hook
     const handleAddEvent = (eventData: Omit<Event, 'id'>) => {
         const newEvent: Event = {
             ...eventData,
             id: crypto.randomUUID(),
         };
-        setEvents(prev => [...prev, newEvent]);
+        setMockEvents(prev => [...prev, newEvent]);
         setIsAddEventModalOpen(false);
 
         const handleReview = () => {
@@ -70,7 +85,7 @@ export default function CalendarPage() {
     };
 
     const handleUpdateEvent = (updatedEvent: Event) => {
-        setEvents(prevEvents => 
+        setMockEvents(prevEvents => 
             prevEvents.map(event => 
                 event.id === updatedEvent.id ? updatedEvent : event
             )
@@ -79,51 +94,29 @@ export default function CalendarPage() {
     };
 
     const handleDeleteEvent = (eventId: string) => {
-        setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
+        setMockEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
         showSuccessToast("Event deleted!");
     };
 
     const handleArchiveEvent = (eventId: string) => {
-        setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
+        setMockEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
         showSuccessToast("Event archived!");
     };
     
-    const handlePrevMonth = () => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
-    const handleNextMonth = () => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-    const handleGoToToday = () => setCurrentDate(new Date());
-    const handleDateChange = (newDate: Date) => {
-        newDate.setHours(12, 0, 0, 0);
-        setCurrentDate(newDate);
-    };
-
-    const handleFilterToggle = (eventType: string) => {
-        if (eventType === 'All') {
-            const allTypes = uniqueCategories.map(cat => cat.type);
-            setActiveFilters(prev => prev.length === allTypes.length ? [] : allTypes);
-        } else {
-            setActiveFilters(prev =>
-                prev.includes(eventType)
-                    ? prev.filter(type => type !== eventType)
-                    : [...prev, eventType]
-            );
-        }
-    };
-    
-    const filteredEvents = useMemo(() => {
-        if (activeFilters.length === 0) return [];
-        return events.filter(event => activeFilters.includes(event.type));
-    }, [activeFilters, events]);
+    if (loading) {
+        return <div className="p-8 text-center text-gray-500">Loading Calendar...</div>;
+    }
 
     return (
-        <DashboardLayout>
+        <>
             <CalendarMain
                 events={filteredEvents}
                 currentDate={currentDate}
-                onPrevMonth={handlePrevMonth}
-                onNextMonth={handleNextMonth}
+                onPrevMonth={() => handleDateChange(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
+                onNextMonth={() => handleDateChange(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
                 onDateChange={handleDateChange}
-                onGoToToday={handleGoToToday}
-                eventCategories={uniqueCategories}
+                onGoToToday={() => handleDateChange(new Date())}
+                eventCategories={eventTypes}
                 activeFilters={activeFilters}
                 onFilterToggle={handleFilterToggle}
                 onSeeAllEvents={() => setIsEventViewModalOpen(true)}
@@ -134,8 +127,8 @@ export default function CalendarPage() {
                 isOpen={isEventViewModalOpen}
                 onClose={() => setIsEventViewModalOpen(false)}
                 initialDate={currentDate}
-                events={events}
-                eventCategories={uniqueCategories}
+                events={mockEvents}
+                eventCategories={eventTypes}
                 onEventAdded={handleAddEvent}
                 onDeleteEvent={handleDeleteEvent}
                 onArchiveEvent={handleArchiveEvent}
@@ -145,7 +138,7 @@ export default function CalendarPage() {
                 isOpen={isAddEventModalOpen}
                 onClose={() => setIsAddEventModalOpen(false)}
                 onAddEvent={handleAddEvent}
-                eventCategories={uniqueCategories}
+                eventCategories={eventTypes}
                 initialDate={currentDate}
             />
 
@@ -156,8 +149,18 @@ export default function CalendarPage() {
                 onArchiveEvent={handleArchiveEvent}
                 onDeleteEvent={handleDeleteEvent}
                 onUpdateEvent={handleUpdateEvent}
-                eventCategories={uniqueCategories}
+                eventCategories={eventTypes}
             />
-        </DashboardLayout>
+        </>
+    );
+}
+
+export default function CalendarPage() {
+    return (
+        <PermissionGuard required={PERMISSIONS.VIEW_CALENDAR_EVENTS}>
+            <DashboardLayout>
+                <CalendarView />
+            </DashboardLayout>
+        </PermissionGuard>
     );
 }

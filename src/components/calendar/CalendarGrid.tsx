@@ -1,5 +1,7 @@
+"use client";
+
 import React, { useMemo } from 'react';
-import { Event } from './CalendarMain';
+import { CalendarEvent as Event } from '@/types/calendar';
 import { toISODateString, Day } from '@/utils/getDates';
 import CalendarPopover from '../ui/EventsPopover';
 
@@ -16,7 +18,8 @@ export default function CalendarGrid({ days, events, selectedDate, onDateSelect 
 
     const eventsByDate = useMemo(() => {
         return events.reduce((acc, event) => {
-            (acc[event.date] = acc[event.date] || []).push(event);
+            const date = toISODateString(new Date(event.start));
+            (acc[date] = acc[date] || []).push(event);
             return acc;
         }, {} as Record<string, Event[]>);
     }, [events]);
@@ -58,13 +61,10 @@ export default function CalendarGrid({ days, events, selectedDate, onDateSelect 
                                 </span>
                                 <div className="flex flex-col gap-1 overflow-hidden">
                                     {eventsToShow.map((event, eventIndex) => (
-                                        // --- MODIFICATION START ---
-                                        // Conditionally apply grey styles if the day is not in the current month
-                                        <div key={eventIndex} className={`flex items-center w-full p-1 rounded-md text-xs ${day.isCurrentMonth ? event.bgColor : 'bg-gray-100'}`}>
-                                            <div className={`w-1 h-3 rounded-full mr-2 ${day.isCurrentMonth ? event.rectColor : 'bg-gray-400'}`}></div>
-                                            <span className={`${day.isCurrentMonth ? 'text-black' : 'text-gray-500'} flex-1 truncate`}>{event.title}</span>
+                                        <div key={eventIndex} style={{ backgroundColor: event.eventType.backgroundColor }} className={`flex items-center w-full p-1 rounded-md text-xs`}>
+                                            <div style={{ backgroundColor: event.eventType.borderColor }} className={`w-1 h-3 rounded-full mr-2`}></div>
+                                            <span className={`text-black flex-1 truncate`}>{event.title}</span>
                                         </div>
-                                        // --- MODIFICATION END ---
                                     ))}
                                     {remainingEvents > 0 && (
                                         <div className="flex items-center w-full p-1 rounded-md text-xs bg-gray-100">
