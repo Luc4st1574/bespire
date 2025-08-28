@@ -8,6 +8,7 @@ import {
   useRef,
   useMemo,
   ReactNode,
+  useCallback,
 } from "react";
 import { GET_USER_PROFILE } from "@/graphql/queries/getUserProfile";
 import { useQuery } from "@apollo/client";
@@ -34,32 +35,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loadingLogout, setLoadingLogout] = useState(false);
   const router = useRouter();
 
-  // Referencia para evitar múltiples queries al perfil
   const hasFetchedProfile = useRef(false);
 
-  // Cargar token desde localStorage una vez
   useEffect(() => {
     const savedToken =
       typeof window !== "undefined" ? localStorage.getItem("token") : null;
     if (savedToken && savedToken !== "undefined") {
       setToken(savedToken);
     } else {
-      setLoading(false); // no hay token, dejamos de cargar
+      setLoading(false);
     }
   }, []);
 
-  // Consultar el perfil solo cuando haya token y no se haya consultado antes
   const {
     data,
     loading: queryLoading,
     refetch,
   } = useQuery(GET_USER_PROFILE, {
     skip: !token || hasFetchedProfile.current,
-    fetchPolicy: "network-only", // Siempre consulta al backend cuando corresponda
+    fetchPolicy: "network-only",
     pollInterval: 0,
   });
 
-  // Actualizar el user cuando llega la data, y marcar el fetch como hecho
   useEffect(() => {
     if (
       token &&
@@ -67,6 +64,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       !queryLoading &&
       !hasFetchedProfile.current
     ) {
+      const userPreferences =
+        typeof data.getUserProfile.preferences === "string"
+          ? JSON.parse(data.getUserProfile.preferences || "{}")
+          : data.getUserProfile.preferences || {};
+
       setUser({
         _id: data.getUserProfile._id,
         email: data.getUserProfile.email,
@@ -78,12 +80,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         hasVisitedDashboard: data.getUserProfile?.hasVisitedDashboard,
         role: data.getUserProfile?.role,
         workspaceSelected: data.getUserProfile?.workspaceSelected || null,
-        preferences: JSON.parse(data.getUserProfile?.preferences || "{}"),
+        preferences: userPreferences,
       });
       setLoading(false);
       hasFetchedProfile.current = true;
     }
-    // Si el token es inválido o expiró, o no existe el perfil
+
     if (
       token &&
       !data?.getUserProfile &&
@@ -97,7 +99,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [token, data, queryLoading, router]);
 
-  // Cuando el token cambie (ejemplo: logout o login), resetea el flag
   useEffect(() => {
     if (!token) {
       hasFetchedProfile.current = false;
@@ -105,26 +106,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [token]);
 
-  const login = (newToken: string) => {
+  const login = useCallback((newToken: string) => {
     setToken(newToken);
     localStorage.setItem("token", newToken);
     hasFetchedProfile.current = false;
-    setLoading(true); // fuerza a mostrar loading hasta cargar user
-  };
+    setLoading(true);
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     setLoadingLogout(true);
     setToken(null);
     setUser(null);
     localStorage.removeItem("token");
     hasFetchedProfile.current = false;
-    // Pequeña pausa para UX
     await new Promise((resolve) => setTimeout(resolve, 100));
     setLoadingLogout(false);
     router.replace("/auth/login");
-  };
+  }, [router]);
 
-  // Memoizar el value del context para evitar renders innecesarios
   const value = useMemo(
     () => ({
       user,
@@ -136,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryLoading,
       refetchProfile: refetch,
     }),
-    [user, token, loading, loadingLogout, queryLoading, refetch]
+    [user, token, login, logout, loading, loadingLogout, queryLoading, refetch]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

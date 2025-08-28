@@ -33,7 +33,9 @@ export default function SidebarCalendar({ selectedDate, onDateSelect }: SidebarC
     const checkedTeamCount = Object.values(checkedItems).filter(Boolean).length;
     const isAllTeamsChecked = teamMembers.length > 0 && checkedTeamCount === teamMembers.length;
     const isTeamIndeterminate = checkedTeamCount > 0 && !isAllTeamsChecked;
-    const filteredTeamMembers = teamMembers.filter((member: TeamMember) => 
+    // FIX: Add checks for member and its properties before calling toLowerCase
+    const filteredTeamMembers = teamMembers.filter((member: TeamMember) =>
+        member && member.firstName && member.lastName &&
         `${member.firstName} ${member.lastName}`.toLowerCase().includes(teamSearchQuery.toLowerCase())
     );
 
@@ -41,8 +43,9 @@ export default function SidebarCalendar({ selectedDate, onDateSelect }: SidebarC
     const checkedClientCount = Object.values(checkedClients).filter(Boolean).length;
     const isAllClientsChecked = companies.length > 0 && checkedClientCount === companies.length;
     const isClientsIndeterminate = checkedClientCount > 0 && !isAllClientsChecked;
-    const filteredClients = companies.filter((client: Company) => 
-        client.name.toLowerCase().includes(clientSearchQuery.toLowerCase())
+    // FIX: Add checks for client and client.name before calling toLowerCase
+    const filteredClients = companies.filter((client: Company) =>
+        client && client.name && client.name.toLowerCase().includes(clientSearchQuery.toLowerCase())
     );
 
     // --- Handlers for Client Listbox ---
