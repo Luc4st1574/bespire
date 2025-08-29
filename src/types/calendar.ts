@@ -2,8 +2,9 @@ export interface CalendarEvent {
     id: string;
     title: string;
     description?: string;
-    start: string; // ISO date string
-    end: string;   // ISO date string
+    // FIX: Changed 'start' and 'end' to match your database schema
+    startDate: string; // ISO date string
+    endDate: string;   // ISO date string
     allDay: boolean;
     isArchived: boolean;
     location?: string;

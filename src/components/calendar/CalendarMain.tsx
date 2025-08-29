@@ -22,7 +22,6 @@ interface CalendarMainProps {
 }
 
 export default function CalendarMain({
-    events,
     currentDate,
     onPrevMonth,
     onNextMonth,
@@ -57,11 +56,12 @@ export default function CalendarMain({
                     selectedDate={currentDate}
                     onDateSelect={onDateChange} 
                 />
+                {/* The 'events' prop is no longer passed to CalendarGrid */}
                 <CalendarGrid 
                     days={calendarDays} 
-                    events={events}
                     selectedDate={currentDate}
                     onDateSelect={onDateChange}
+                    currentDate={currentDate}
                 />
             </div>
             <div className="border-t border-t-[#fbfff7] pt-[500px]">

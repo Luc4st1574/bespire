@@ -1,28 +1,61 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { CalendarEvent as Event } from '@/types/calendar';
 import { toISODateString, Day } from '@/utils/getDates';
 import CalendarPopover from '../ui/EventsPopover';
+import { useCalendar } from '@/hooks/useCalendar';
 
 interface CalendarGridProps {
     days: Day[];
-    events: Event[];
     selectedDate: Date;
     onDateSelect: (date: Date) => void;
+    currentDate: Date;
 }
 
-export default function CalendarGrid({ days, events, selectedDate, onDateSelect }: CalendarGridProps) {
+export default function CalendarGrid({ days, selectedDate, onDateSelect, currentDate }: CalendarGridProps) {
     const dayHeaders = ['SUN', 'MON', 'TUE', 'WED', 'THUR', 'FRI', 'SAT'];
     const selectedDateString = toISODateString(selectedDate);
+    const { events, loading, error, setDateRange } = useCalendar();
+
+    useEffect(() => {
+        const start = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const end = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+        setDateRange({ start, end });
+    }, [currentDate, setDateRange]);
 
     const eventsByDate = useMemo(() => {
-        return events.reduce((acc, event) => {
-            const date = toISODateString(new Date(event.start));
-            (acc[date] = acc[date] || []).push(event);
-            return acc;
-        }, {} as Record<string, Event[]>);
+        const eventMap: Record<string, Event[]> = {};
+        if (!events) return eventMap;
+
+        for (const event of events) {
+            // FIX: Changed event.start to event.startDate and event.end to event.endDate
+            const start = new Date(event.startDate);
+            const end = event.endDate ? new Date(event.endDate) : start;
+
+            // This logic is safer when dealing with UTC dates to avoid timezone issues.
+            const current = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()));
+            const last = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate()));
+
+            while (current <= last) {
+                const dateStr = toISODateString(new Date(current.toISOString().slice(0, 10).replace(/-/g, '/'))); // Ensure correct parsing
+                if (!eventMap[dateStr]) {
+                    eventMap[dateStr] = [];
+                }
+                eventMap[dateStr].push(event);
+                current.setUTCDate(current.getUTCDate() + 1); // Iterate by UTC day
+            }
+        }
+        return eventMap;
     }, [events]);
+
+    if (loading) {
+        return <div className="flex-1 flex items-center justify-center">Loading events...</div>;
+    }
+
+    if (error) {
+        return <div className="flex-1 flex items-center justify-center text-red-500">Error: {error.message}</div>;
+    }
 
     return (
         <div className="flex-1 bg-white border border-gray-200 rounded-lg flex flex-col">
@@ -42,9 +75,9 @@ export default function CalendarGrid({ days, events, selectedDate, onDateSelect 
                     const columnIndex = index % 7;
 
                     return (
-                        <CalendarPopover 
-                            key={index} 
-                            events={dailyEvents} 
+                        <CalendarPopover
+                            key={index}
+                            events={dailyEvents}
                             date={day.date}
                             columnIndex={columnIndex}
                         >
