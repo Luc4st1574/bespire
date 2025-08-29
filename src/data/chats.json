@@ -1,0 +1,111 @@
+[
+  {
+    "id": 1,
+    "name": "Iya Owolabi",
+    "avatar": "https://xsgames.co/randomusers/assets/avatars/female/23.jpg",
+    "lastMessage": "Sounds good to me! I'll get it over to you...",
+    "timestamp": "2025-08-29T11:40:00-05:00",
+    "unreadCount": 2,
+    "isOnline": true,
+    "conversation": [
+      {
+        "sender": "Iya Owolabi",
+        "text": "Hey, how's the project coming along?",
+        "timestamp": "10:20 AM"
+      },
+      {
+        "sender": "You",
+        "text": "Pretty good! I'm just finishing up the design mockups. Should be ready for review this afternoon.",
+        "timestamp": "10:22 AM"
+      },
+      {
+        "sender": "Iya Owolabi",
+        "text": "Great to hear. Do you need any of the assets I mentioned last week?",
+        "timestamp": "10:25 AM"
+      },
+      {
+        "sender": "Iya Owolabi",
+        "text": "Sounds good to me! I'll get it over to you...",
+        "timestamp": "10:30 AM"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Glinda",
+    "avatar": "https://xsgames.co/randomusers/assets/avatars/female/44.jpg",
+    "lastMessage": "Let's touch base in the morning to finalize...",
+    "timestamp": "2025-08-29T09:45:00-05:00",
+    "unreadCount": 0,
+    "isOnline": false,
+    "conversation": [
+      {
+        "sender": "You",
+        "text": "Hey Glinda, I've pushed the latest changes to the staging server. Can you take a look?",
+        "timestamp": "9:40 AM"
+      },
+      {
+        "sender": "Glinda",
+        "text": "Sure, I'll check it out now. I have a couple of quick questions about the implementation.",
+        "timestamp": "9:42 AM"
+      },
+      {
+        "sender": "Glinda",
+        "text": "Let's touch base in the morning to finalize...",
+        "timestamp": "9:45 AM"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Gerard",
+    "avatar": "https://xsgames.co/randomusers/assets/avatars/male/56.jpg",
+    "lastMessage": "The new design looks great! Good job.",
+    "timestamp": "2025-08-28T16:00:00-05:00",
+    "unreadCount": 0,
+    "isOnline": true,
+    "conversation": [
+      {
+        "sender": "You",
+        "text": "The final designs for the dashboard are ready for your review.",
+        "timestamp": "Yesterday"
+      },
+      {
+        "sender": "Gerard",
+        "text": "Awesome, I'll take a look right now.",
+        "timestamp": "Yesterday"
+      },
+      {
+        "sender": "Gerard",
+        "text": "The new design looks great! Good job.",
+        "timestamp": "Yesterday"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "name": "Michelle",
+    "avatar": "https://xsgames.co/randomusers/assets/avatars/female/59.jpg",
+    "lastMessage": "Perfect, thanks!",
+    "timestamp": "2025-08-27T11:00:00-05:00",
+    "unreadCount": 1,
+    "isOnline": false,
+    "conversation": [
+      {
+        "sender": "Michelle",
+        "text": "Can you send over the latest files for the client presentation?",
+        "timestamp": "Yesterday"
+      },
+      {
+        "sender": "You",
+        "text": "Just sent them to your email.",
+        "timestamp": "Yesterday"
+      },
+      {
+        "sender": "Michelle",
+        "text": "Perfect, thanks!",
+        "timestamp": "Yesterday"
+      }
+    ]
+  }
+]

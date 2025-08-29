@@ -4,16 +4,14 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { usePathname } from "next/navigation";
 import Button from "@/components/ui/Button";
 import { Plus, Search, Edit2, UserPlus } from "lucide-react";
-import IconMessage from "@/assets/icons/icon_message.svg";
-import IconNotification from "@/assets/icons/icon_notification.svg";
 import CreateRequestModal from "@/components/modals/CreateRequestModal";
 import SharePopover from "@/components/ui/SharePopOver";
 import { useAppContext } from "@/context/AppContext";
 import { PERMISSIONS } from "@/constants/permissions";
 import { usePermission } from "@/hooks/usePermission";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import ChatPreview from "@/components/chat/ChatPreview";
 
-// The component no longer accepts any props. It gets all its data from the context.
 const Header = React.memo(() => {
   const {
     showModalRequest,
@@ -33,21 +31,17 @@ const Header = React.memo(() => {
   const [isRenaming, setIsRenaming] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const localFileNameRef = useRef("");
-
   const [localFileName, setLocalFileName] = useState("");
 
-  // Cambiar el useEffect para que solo se ejecute cuando cambie el pathname
   useEffect(() => {
     if (!pathname.includes("/files") && isEditorMode) {
       setIsEditorMode(false);
       setEditorFileName("");
     }
-  }, [pathname, isEditorMode, setIsEditorMode, setEditorFileName]); // Incluir todas las dependencias
+  }, [pathname, isEditorMode, setIsEditorMode, setEditorFileName]);
 
-  // Función para obtener el título basado en la ruta - memoizada
   const getPageTitle = useMemo(() => {
     if (isEditorMode) return editorFileName || "Untitled";
-
     if (pathname === "/files") return "File Manager";
     if (pathname === "/files/folders") return "Folders";
     if (pathname === "/files/documents") return "Documents";
@@ -59,7 +53,6 @@ const Header = React.memo(() => {
     if (pathname.includes("/calendar")) return "Calendar";
     if (pathname.includes("/analytics")) return "Analytics";
     if (pathname.includes("/settings")) return "Settings";
-
     return "Dashboard";
   }, [pathname, isEditorMode, editorFileName]);
 
@@ -94,7 +87,6 @@ const Header = React.memo(() => {
         inputRef.current?.focus();
         inputRef.current?.select();
       }, 0);
-
       document.addEventListener("mousedown", handleClickOutside);
       return () => {
         document.removeEventListener("mousedown", handleClickOutside);
@@ -103,7 +95,6 @@ const Header = React.memo(() => {
   }, [isRenaming, handleClickOutside]);
 
   const renderHeaderContent = () => {
-    // --- HEADER FOR EDITOR MODE ---
     if (isEditorMode) {
       return (
         <>
@@ -145,7 +136,7 @@ const Header = React.memo(() => {
 
           <div className="flex-grow"></div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <div className="relative">
               <button
                 type="button"
@@ -162,25 +153,24 @@ const Header = React.memo(() => {
                 fileName={editorFileName}
               />
             </div>
-
             <button
               onClick={saveDoc}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-black bg-gray-200 rounded-full hover:bg-gray-300 transition-colors"
             >
               Save & Close
             </button>
-
             <button
               onClick={cancelEdit}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-transparent rounded-full hover:bg-gray-100 transition-colors"
             >
               Cancel
             </button>
-
             <div className="h-6 w-px bg-gray-300 mx-1"></div>
+            {/* CORRECTED SECTION */}
             <Search className="w-5 h-5 text-gray-600 cursor-pointer" />
-            <IconMessage className="w-5 h-5 cursor-pointer" />
-            <IconNotification className="w-5 h-5 cursor-pointer" />
+            <ChatPreview />
+            <NotificationBell />
+            {/* END CORRECTED SECTION */}
           </div>
         </>
       );
@@ -188,7 +178,6 @@ const Header = React.memo(() => {
 
     return (
       <>
-        {/* The title reads from getPageTitle, ensuring it shows the correct page title. */}
         <div className="text-xl font-medium text-[#181B1A]">{getPageTitle}</div>
         <div className="flex items-center gap-4">
           <Button
@@ -220,7 +209,7 @@ const Header = React.memo(() => {
               <Search className="w-4 h-4" />
             </div>
           </Button>
-          <IconMessage className="w-5 h-5 cursor-pointer" />
+          <ChatPreview />
           <NotificationBell />
         </div>
       </>
